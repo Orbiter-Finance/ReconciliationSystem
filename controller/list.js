@@ -142,7 +142,6 @@ router.get("/newlist", async (ctx) => {
     { concurrency: 10 }
   );
   ctx.body = { data: docs, pages: current, code: 0, size, total: count };
-  console.log(ctx.body);
 });
 
 router.get("/notMatchMakerTxList", async (ctx) => {
