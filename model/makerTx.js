@@ -14,6 +14,7 @@ let makerTx = new Schema({
     replyAccount: String,
     createdAt: Date,
     updatedAt: Date,
+    matchedTx: Object,
     status: { type: String, index: true, default: 'init'}
 });
 
