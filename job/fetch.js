@@ -61,6 +61,7 @@ async function startMatch() {
     } else if (filterResult.length > 1) {
       let newDoc = doc.toJSON()
       newDoc.status = 'warning'
+      newDoc.warnTxList = filterResult.map(item => item.tx_hash);
       let ur = await makerTxModel.findOneAndUpdate({ id: doc.id }, newDoc)
       logger.info(`${doc.transcationId}: warning`)
     }
