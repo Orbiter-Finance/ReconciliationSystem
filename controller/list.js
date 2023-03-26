@@ -2,14 +2,14 @@ const Router = require("koa-router");
 
 const db = require("../model/index");
 const fakerMakerTx = require("../model/fakerMakerTx");
-const makerTx = require('../model/makerTx');
+const makerTx = require("../model/makerTx");
 const txServices = require("../mock/txServices");
 const bluebird = require("bluebird");
 const _ = require("lodash");
 const moment = require("moment");
 const pairTable = require("../target.json");
 const router = new Router();
-const dashbroddb = require('../model/dashbroddb')
+const dashbroddb = require("../model/dashbroddb");
 router.get("/list", async (ctx) => {
   let {
     current = 0,
@@ -57,23 +57,29 @@ router.get("/list", async (ctx) => {
     const targetPairTableList = _.filter(pairTable, (item) =>
       failTranscationIdList.includes(item.transcationId.toLowerCase())
     );
-   const has =  pairTable.some((item)=>item.transcationId.toLowerCase())
-   
+    const has = pairTable.some((item) => item.transcationId.toLowerCase());
+
     console.log("-----targetPairTableList：", targetPairTableList);
     const transcationIdToTxHash = {};
     targetPairTableList.forEach((item) => {
       transcationIdToTxHash[item.transcationId] = item.result.hash;
     });
     const fakemakerTxHashList = _.map(targetPairTableList, "fromTxHash");
-    const fakemakerTxList = await fakerMakerTx.find({ _id: { $in: fakemakerTxHashList } });
-    console.log("------------------------fakemakerTxList:", fakemakerTxList.length);
+    const fakemakerTxList = await fakerMakerTx.find({
+      _id: { $in: fakemakerTxHashList },
+    });
+    console.log(
+      "------------------------fakemakerTxList:",
+      fakemakerTxList.length
+    );
     await bluebird.map(
       list,
       async (item) => {
         if (
           failTranscationIdList.includes(item.transcationId) &&
           fakemakerTxList.find(
-            (item1) => item1.tx_hash === transcationIdToTxHash[item.transcationId]
+            (item1) =>
+              item1.tx_hash === transcationIdToTxHash[item.transcationId]
           )
         ) {
           console.log("--------------------item:", item.transcationId);
@@ -91,48 +97,78 @@ router.get("/list", async (ctx) => {
   console.log(ctx.body.total, result.count);
 });
 
-
 router.get("/newlist", async (ctx) => {
-    let {
-        current = 0,
-        size = 10,
-        fromTxHash,
-        startTime: start,
-        endTime: end,
-        makerAddress,
-        state,
-    } = ctx.query;
-    const skip = Number(current) * size
-    const where = {}
-    if (start && end) {
-        where.createdAt = {
-            $gt: new Date(Number(start)),
-            $lte: new Date(Number(end))
-        }
-    }
-    if (Number(state) === 20) {
-        where.status = {
-            $eq: 'matched'
-        }
-    } else if (Number(state) === 3) {
-        where.$and = [{ status: { $ne: 'matched'} }, { status: { $ne: 'warning'}}] 
-    }
-    console.log(where)
-    const docs = await makerTx.find(where).skip(skip).limit(size).lean()
-    const count = await makerTx.count(where)
-    console.log('---------docs', docs.length)
-    await bluebird.map(docs, async doc => {
-        const inId = doc.inId;
-        const sql = `SELECT * FROM transaction WHERE id = ${inId}`
-        // console.log('------------', sql)
-        const [r] = await dashbroddb.query(sql)
-        if (r.length) {
-            doc.inData = r[0]
-        }
-        // console.log('---------docs', doc)
-    }, { concurrency: 10 })
-    ctx.body = { data: docs, pages: current, code: 0, size, total: count };
-    console.log(ctx.body)
+  let {
+    current = 0,
+    size = 10,
+    fromTxHash,
+    startTime: start,
+    endTime: end,
+    makerAddress,
+    state,
+  } = ctx.query;
+  const skip = Number(current) * size;
+  const where = {};
+  if (start && end) {
+    where.createdAt = {
+      $gt: new Date(Number(start)),
+      $lte: new Date(Number(end)),
+    };
+  }
+  if (Number(state) === 20) {
+    where.status = {
+      $eq: "matched",
+    };
+  } else if (Number(state) === 3) {
+    where.$and = [
+      { status: { $ne: "matched" } },
+      { status: { $ne: "warning" } },
+    ];
+  }
+  console.log(where);
+  const docs = await makerTx.find(where).skip(skip).limit(size).lean();
+  const count = await makerTx.count(where);
+  console.log("---------docs", docs.length);
+  await bluebird.map(
+    docs,
+    async (doc) => {
+      const inId = doc.inId;
+      const sql = `SELECT * FROM transaction WHERE id = ${inId}`;
+      // console.log('------------', sql)
+      const [r] = await dashbroddb.query(sql);
+      if (r.length) {
+        doc.inData = r[0];
+      }
+      // console.log('---------docs', doc)
+    },
+    { concurrency: 10 }
+  );
+  ctx.body = { data: docs, pages: current, code: 0, size, total: count };
+  console.log(ctx.body);
+});
+
+router.get("/notMatchMakerTxList", async (ctx) => {
+  let {
+    current = 0,
+    size = 10,
+    startTime: start,
+    endTime: end,
+    makerAddress,
+  } = ctx.query;
+  const skip = Number(current) * size;
+  const where = { bind_status: "Error" };
+  // if (start && end) {
+  //   where.createdAt = {
+  //     $gt: new Date(Number(start)),
+  //     $lte: new Date(Number(end)),
+  //   };
+  // }
+  if (makerAddress) {
+    where.fake_maker_address = makerAddress;
+  }
+  const txList = await fakerMakerTx.find(where).skip(skip).limit(size).lean();
+  const count = await fakerMakerTx.find(where);
+  ctx.body = { data: txList, pages: current, code: 0, size, total: count };
 });
 
 router.post("/update", async (ctx) => {
