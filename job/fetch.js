@@ -50,13 +50,14 @@ async function startMatch() {
     if (filterResult.length === 1) {
       let newDoc = doc.toJSON()
       newDoc.status = 'matched'
+      newDoc.matchedTx = filterResult[0];
       let ur = await makerTxModel.findOneAndUpdate({ id: doc.id }, newDoc)
-      console.log(`${doc.transcationId}: match success`, ur)
+      console.log(`${doc.transcationId}: match success`)
     } else if (filterResult.length > 1) {
       let newDoc = doc.toJSON()
       newDoc.status = 'warning'
       let ur = await makerTxModel.findOneAndUpdate({ id: doc.id }, newDoc)
-      console.log(`${doc.transcationId}: warning`, ur)
+      console.log(`${doc.transcationId}: warning`)
     }
   }, { concurrency: 10 })
 }
