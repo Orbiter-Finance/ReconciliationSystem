@@ -110,11 +110,13 @@ router.get("/notMatchMakerTxList", async (ctx) => {
     endTime: end,
     makerAddress,
     state,
+    chain,
   } = ctx.query;
   current = Number(current)
   if (!current || current <= 0) {
     current = 1
   }
+  
   const skip = (current - 1) * size;
   let bind_status = ["Error", "multi", "too_old"];
   if (["Error", "multi", "too_old"].includes(state)) {
@@ -123,6 +125,9 @@ router.get("/notMatchMakerTxList", async (ctx) => {
   const where = { bind_status: { $in: bind_status } };
   if (makerAddress) {
     where.fake_maker_address = makerAddress;
+  }
+  if (chain && constant.chainDesc.includes(chain)) {
+    where.tx_env = { $eq: chain }
   }
   const txList = await fakerMakerTx.find(where).skip(skip).limit(size).lean();
   const count = await fakerMakerTx.count(where);
