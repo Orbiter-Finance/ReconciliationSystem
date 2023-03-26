@@ -3,6 +3,7 @@ const initMongodb = require('./model/initMongodb')
 const bodyParser = require('koa-bodyparser');
 const app = new Koa();
 const router = require('./controller/list')
+const userRouter = require('./controller/user')
 const static = require('koa-static')
 const fetch = require('./job/fetch')
 app.use(async (ctx, next)=> {
@@ -19,9 +20,10 @@ app.use(static('public'))
 app.use(bodyParser());
 
 app.use(router.routes())
+app.use(userRouter.routes())
 
 initMongodb().then(() => {
-    fetch.start()
+    // fetch.start()
     app.listen(3000, () => {
         console.log(`listening in 3000`)
     });
