@@ -24,7 +24,7 @@ router.get("/newlist", async (ctx) => {
     transactionId,
   } = ctx.query;
   current = Number(current)
-  if (!current) {
+  if (!current || current <= 0) {
     current = 1
   }
   const skip = (current - 1) * size;
@@ -112,7 +112,7 @@ router.get("/notMatchMakerTxList", async (ctx) => {
     state,
   } = ctx.query;
   current = Number(current)
-  if (!current) {
+  if (!current || current <= 0) {
     current = 1
   }
   const skip = (current - 1) * size;
