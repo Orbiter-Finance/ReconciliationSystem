@@ -167,7 +167,7 @@ router.get("/notMatchMakerTxList", async (ctx) => {
     where.fake_maker_address = makerAddress;
   }
   const txList = await fakerMakerTx.find(where).skip(skip).limit(size).lean();
-  const count = await fakerMakerTx.find(where);
+  const count = await fakerMakerTx.count(where);
   ctx.body = { data: txList, pages: current, code: 0, size, total: count };
 });
 
