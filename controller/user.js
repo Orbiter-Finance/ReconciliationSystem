@@ -40,12 +40,10 @@ router.get("/submit", userMiddleware, async (ctx) => {
 
 router.get("/login", async (ctx) => {
     const { name, password } = ctx.query;
-    const usr = await user.findOneAndUpdate({
+    const usr = await user.findOne({
         name,
-        password: md5(password),
-        loginTime: new Date().valueOf()
+        password: md5(password)
     });
-    console.log(usr)
     if (!usr) {
         ctx.body = { code: 1, msg: 'User name or password error' };
         return;
@@ -54,7 +52,10 @@ router.get("/login", async (ctx) => {
         ctx.body = { code: 1, msg: 'Account has been ban' };
         return;
     }
-    const token = encrypt(JSON.stringify({ id: usr.id, role: usr.role, name, random: Math.random() }));
+    await user.updateOne({ id: usr.id }, {
+        loginTime: new Date().valueOf()
+    });
+    const token = await encrypt(JSON.stringify({ id: usr.id, role: usr.role, name, random: Math.random() }));
     ctx.body = { code: 0, msg: 'success', data: { token } };
 });
 

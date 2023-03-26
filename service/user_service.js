@@ -8,10 +8,15 @@ async function initUser() {
         const password = md5(account.password);
         const name = account.name;
         const role = +account.role || 2;
-        const usr = await user.findOneAndUpdate({
+        const count = await user.count({
             name,
-        }, { name, password, role, status: 1, }, { upsert: true });
-        console.log('Register user', name);
+        });
+        if (!count) {
+            await user.updateOne({
+                name,
+            }, { name, password, role, status: 1 });
+            console.log('Register user', name);
+        }
     }
 }
 
