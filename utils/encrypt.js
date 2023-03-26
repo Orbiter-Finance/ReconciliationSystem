@@ -1,5 +1,5 @@
 const jwt = require("jsonwebtoken");
-
+const md5 = require('md5');
 const env = require('../config/env');
 
 const salt = 'asdfqwer123#';
@@ -22,5 +22,8 @@ module.exports = {
                 token: false
             };
         }
+    },
+    md5(pwd) {
+        return md5(pwd + privateKey);
     }
 };

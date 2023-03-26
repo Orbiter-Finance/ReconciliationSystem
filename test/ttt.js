@@ -1,5 +1,5 @@
-const db = require("./model/index");
-const pairTable = require("./target.json");
+const db = require("../model");
+const pairTable = require("../target.json");
 // const bluebird = req
 
 async function main() {
