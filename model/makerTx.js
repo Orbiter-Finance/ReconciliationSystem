@@ -15,7 +15,9 @@ let makerTx = new Schema({
     createdAt: Date,
     updatedAt: Date,
     matchedTx: Object,
-    status: { type: String, index: true, default: 'init'}
+    confirmTx: String,
+    status: { type: String, index: true, default: 'init'},
+    confirmStatus: { type: String, index: true, default: 'noConfirm' }, // noConfirm, successByAdmin,failByAdmin
 });
 
 module.exports = mongoose.model('makerTx', makerTx, 'makerTx');

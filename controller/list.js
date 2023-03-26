@@ -125,10 +125,8 @@ router.get("/newlist", async (ctx) => {
       { status: { $ne: "warning" } },
     ];
   }
-  console.log(where);
   const docs = await makerTx.find(where).skip(skip).limit(size).lean();
   const count = await makerTx.count(where);
-  console.log("---------docs", docs.length);
   await bluebird.map(
     docs,
     async (doc) => {
@@ -157,12 +155,6 @@ router.get("/notMatchMakerTxList", async (ctx) => {
   } = ctx.query;
   const skip = Number(current) * size;
   const where = { bind_status: "Error" };
-  // if (start && end) {
-  //   where.createdAt = {
-  //     $gt: new Date(Number(start)),
-  //     $lte: new Date(Number(end)),
-  //   };
-  // }
   if (makerAddress) {
     where.fake_maker_address = makerAddress;
   }
