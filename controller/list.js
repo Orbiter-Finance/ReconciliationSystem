@@ -21,6 +21,7 @@ router.get("/newlist", async (ctx) => {
     endTime: end,
     makerAddress,
     state,
+    transactionId,
   } = ctx.query;
   if (!current) {
     current = 1
@@ -33,6 +34,9 @@ router.get("/newlist", async (ctx) => {
       $gt: new Date(Number(start)),
       $lte: new Date(Number(end)),
     };
+  }
+  if (transactionId) {
+    where.transcationId = { $eq: transactionId }
   }
   state = Number(state)
   if (state === constant.state.successByMatched) {
@@ -84,12 +88,13 @@ router.get("/newlist", async (ctx) => {
       doc.state = state;
 
       // find user tx
-      // const inId = doc.inId;
-      // const sql = `SELECT * FROM transaction WHERE id = ${inId}`;
-      // const [r] = await dashbroddb.query(sql);
-      // if (r.length) {
-      //   doc.inData = r[0];
-      // }
+      
+      const inId = doc.inId;
+      const sql = `SELECT * FROM transaction WHERE id = ${inId}`;
+      const [r] = await dashbroddb.query(sql);
+      if (r.length) {
+        doc.inData = r[0];
+      }
       
     },
     { concurrency: 10 }
