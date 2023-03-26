@@ -50,9 +50,11 @@ app.use(router.routes())
 app.use(userRouter.routes())
 
 initMongodb().then(() => {
-    fetch.start()
-    initUser();
+    if (env.isDev || env.isProd) {
+        fetch.start();
+        initUser();
+    }
     app.listen(3000, () => {
-        console.log(`listening in 3000`)
+        console.log(`listening in 3000`);
     });
-})
+});
