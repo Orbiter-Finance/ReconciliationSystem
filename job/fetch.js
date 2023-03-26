@@ -4,6 +4,7 @@ const bluebird = require('bluebird')
 const init = require('../model/initMongodb')
 const fakerMakerTx = require('../model/fakerMakerTx')
 const utils = require('../utils')
+const logger = require('../utils/logger')
 async function startFecth() {
   let [list] = await pool.query('SELECT * FROM maker_transaction WHERE ISNULL(outId) AND toChain in (2,3,4,14)')
   try {
@@ -27,7 +28,7 @@ async function startCheck() {
     const sql = `SELECT * FROM maker_transaction WHERE \`id\` = ${id} AND outId IS NOT NULL`
     const [r] = await pool.query(sql);
     if (r.length) {
-      console.log('delete---', doc)
+      logger.info('delete---', doc)
       await makerTxModel.findOneAndDelete({id: id});
     }
   }, { concurrency: 10 })
@@ -52,12 +53,12 @@ async function startMatch() {
       newDoc.status = 'matched'
       newDoc.matchedTx = filterResult[0];
       let ur = await makerTxModel.findOneAndUpdate({ id: doc.id }, newDoc)
-      console.log(`${doc.transcationId}: match success`)
+      logger.info(`${doc.transcationId}: match success`)
     } else if (filterResult.length > 1) {
       let newDoc = doc.toJSON()
       newDoc.status = 'warning'
       let ur = await makerTxModel.findOneAndUpdate({ id: doc.id }, newDoc)
-      console.log(`${doc.transcationId}: warning`)
+      logger.info(`${doc.transcationId}: warning`)
     }
   }, { concurrency: 10 })
 }
@@ -69,32 +70,32 @@ async function start() {
   let matching = false
   setInterval(() => {
     if (fecting) {
-      console.log('fecthing')
+      logger.info('fecthing')
       return
     }
     fecting = true
-    console.log('start fetching')
-    startFecth().finally(() => { fetching = false;console.log('end fetch') })
+    logger.info('start fetching')
+    startFecth().finally(() => { fetching = false;logger.info('end fetch') })
   }, 30 * 1000)
 
   setInterval(() => {
     if (checking) {
-      console.log('checking')
+      logger.info('checking')
       return
     }
-    console.log('start checking')
+    logger.info('start checking')
     checking = true
-    startCheck().finally(() => { checking = false;console.log('end check') })
+    startCheck().finally(() => { checking = false;logger.info('end check') })
   }, 30 * 1000)
 
   setInterval(() => {
     if (matching) {
-      console.log('matching')
+      logger.info('matching')
       return
     }
-    console.log('start matching')
+    logger.info('start matching')
     matching = true
-    startMatch().finally(() => { matching = false;console.log('end match') })
+    startMatch().finally(() => { matching = false;logger.info('end match') })
   }, 30 * 1000)
 }
 // start()
