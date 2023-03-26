@@ -10,7 +10,8 @@ const moment = require("moment");
 const pairTable = require("../target.json");
 const router = new Router();
 const dashbroddb = require("../model/dashbroddb");
-const constant = require('../constant')
+const constant = require('../constant');
+const { getFormatDate } = require("../utils/index");
 
 router.get("/newlist", async (ctx) => {
   let {
@@ -86,6 +87,9 @@ router.get("/newlist", async (ctx) => {
         }
       }
       doc.state = state;
+
+      doc.createdAt = getFormatDate(doc.createdAt);
+      doc.updatedAt = getFormatDate(doc.updatedAt);
 
       // find user tx
 
