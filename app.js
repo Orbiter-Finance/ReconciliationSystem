@@ -23,7 +23,7 @@ app.use(router.routes())
 app.use(userRouter.routes())
 
 initMongodb().then(() => {
-    // fetch.start()
+    fetch.start()
     app.listen(3000, () => {
         console.log(`listening in 3000`)
     });
