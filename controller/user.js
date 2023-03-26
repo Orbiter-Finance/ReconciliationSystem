@@ -3,37 +3,65 @@ const Router = require("koa-router");
 const router = new Router();
 const user = require('../model/user');
 const makerTx = require('../model/failMakerTransaction');
-const userLog = require('../model/userLog');
 const { encrypt, decrypt, md5 } = require('../utils/encrypt');
 
-async function userMiddleware(ctx, next) {
-    const { token, baseInfo } = await decrypt(ctx?.req?.headers?.token);
+// async function userMiddleware(ctx, next) {
+//     const { token, baseInfo } = await decrypt(ctx?.req?.headers?.token);
+//     if (token) {
+//         const info = JSON.parse(baseInfo);
+//         ctx.uid = info.id;
+//         ctx.role = info.role;
+//         await next();
+//     } else {
+//         ctx.body = { msg: 'Login has expired, please login again', code: 401, status: 401 };
+//     }
+// }
+
+async function checkLogin(ctx) {
+    const { token, baseInfo } = await decrypt(ctx.query.token);
     if (token) {
         const info = JSON.parse(baseInfo);
         ctx.uid = info.id;
+        ctx.name = info.name;
         ctx.role = info.role;
-        await next();
+        return true
     } else {
-        ctx.body = { msg: 'Login has expired, please login again', code: 401, status: 401 };
+        return false
     }
 }
 
-router.get("/submit", userMiddleware, async (ctx) => {
-    const { makerTxId } = ctx.query;
+router.get("/submit", async (ctx) => {
+    if (!await checkLogin(ctx)) {
+        ctx.body = { msg: 'Login has expired, please login again', code: 401, status: 401 };
+        return;
+    }
+    const { makerTxId, hash } = ctx.query;
     const status = +ctx.query.status;
-    const { uid, role } = ctx;
-    await userLog.updateOne({
-        uid,
-        makerTxId,
-    }, { status, makerTxId, updateTime: new Date().valueOf() }, { upsert: true });
+    const { uid, name, role } = ctx;
+    if (!makerTxId) {
+        ctx.body = { code: 1, msg: 'Parameter error' };
+        return;
+    }
+    const tx = await makerTx.findOne({
+        id: makerTxId
+    });
+    if(!tx){
+        ctx.body = { code: 1, msg: 'Transactions do not exist' };
+        return;
+    }
+    if (tx.status === 'matched') {
+        ctx.body = { code: 1, msg: 'Unable to operate a successful transaction' };
+        return;
+    }
     const statusStr = status === 1 ? 'success' : 'fail';
-    let confirmStatus = role === 1 ? `${ statusStr }ByAdmin` : `${ statusStr }ByOper`;
+    let confirmStatus = `${ statusStr }ByAdmin`;
     if (status === 0) {
         confirmStatus = 'noConfirm';
     }
+    const userLog = { uid, name, hash, updateStatus: status, role, updateTime: new Date().valueOf() };
     await makerTx.updateOne({
-        id: makerTxId
-    }, { confirmStatus });
+        id: makerTxId,
+    }, { confirmStatus, userLog });
 
     ctx.body = { code: 0, msg: 'success' };
 });
@@ -52,10 +80,10 @@ router.get("/login", async (ctx) => {
         ctx.body = { code: 1, msg: 'Account has been ban' };
         return;
     }
-    await user.updateOne({ id: usr.id }, {
+    await user.updateOne({ _id: usr._id }, {
         loginTime: new Date().valueOf()
     });
-    const token = await encrypt(JSON.stringify({ id: usr.id, role: usr.role, name, random: Math.random() }));
+    const token = await encrypt(JSON.stringify({ id: usr._id, role: usr.role, name, random: Math.random() }));
     ctx.body = { code: 0, msg: 'success', data: { token } };
 });
 

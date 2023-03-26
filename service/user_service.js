@@ -12,9 +12,7 @@ async function initUser() {
             name,
         });
         if (!count) {
-            await user.updateOne({
-                name,
-            }, { name, password, role, status: 1 });
+            await user.create({ name, password, role, status: 1 });
             console.log('Register user', name);
         }
     }
