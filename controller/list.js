@@ -154,7 +154,7 @@ router.get("/notMatchMakerTxList", async (ctx) => {
     makerAddress,
   } = ctx.query;
   const skip = Number(current) * size;
-  const where = { bind_status: "Error" };
+  const where = { bind_status: { $in: ["Error", "multi"] } };
   if (makerAddress) {
     where.fake_maker_address = makerAddress;
   }
