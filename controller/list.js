@@ -37,7 +37,7 @@ router.get("/newlist", async (ctx) => {
     };
   }
   if (transactionId) {
-    where.transcationId = { $eq: transactionId };
+    where.inId = { $eq: Number(transactionId) };
   }
   state = Number(state);
   if (state === constant.state.successByMatched) {
