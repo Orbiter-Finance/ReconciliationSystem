@@ -23,10 +23,10 @@ router.get("/newlist", async (ctx) => {
     state,
     transactionId,
   } = ctx.query;
+  current = Number(current)
   if (!current) {
     current = 1
   }
-  current = Number(current)
   const skip = (current - 1) * size;
   const where = {};
   if (start && end) {
@@ -88,7 +88,7 @@ router.get("/newlist", async (ctx) => {
       doc.state = state;
 
       // find user tx
-      
+
       const inId = doc.inId;
       const sql = `SELECT * FROM transaction WHERE id = ${inId}`;
       const [r] = await dashbroddb.query(sql);
