@@ -14,7 +14,7 @@ const constant = require('../constant')
 
 router.get("/newlist", async (ctx) => {
   let {
-    current = 0,
+    current = 1,
     size = 10,
     fromTxHash,
     startTime: start,
@@ -22,7 +22,11 @@ router.get("/newlist", async (ctx) => {
     makerAddress,
     state,
   } = ctx.query;
-  const skip = Number(current) * size;
+  if (!current) {
+    current = 1
+  }
+  current = Number(current)
+  const skip = (current - 1) * size;
   const where = {};
   if (start && end) {
     where.createdAt = {
@@ -54,7 +58,7 @@ router.get("/newlist", async (ctx) => {
       { confirmStatus: { $nin: [constant.confirmStatus.failByAdmin, constant.confirmStatus.successByAdmin] } }
     ];
   }
-  console.log(where)
+  console.log(JSON.stringify(where), skip, size)
   const docs = await makerTx.find(where).skip(skip).limit(size).lean();
   const count = await makerTx.count(where);
   await bluebird.map(
@@ -80,12 +84,12 @@ router.get("/newlist", async (ctx) => {
       doc.state = state;
 
       // find user tx
-      const inId = doc.inId;
-      const sql = `SELECT * FROM transaction WHERE id = ${inId}`;
-      const [r] = await dashbroddb.query(sql);
-      if (r.length) {
-        doc.inData = r[0];
-      }
+      // const inId = doc.inId;
+      // const sql = `SELECT * FROM transaction WHERE id = ${inId}`;
+      // const [r] = await dashbroddb.query(sql);
+      // if (r.length) {
+      //   doc.inData = r[0];
+      // }
       
     },
     { concurrency: 10 }
@@ -95,14 +99,18 @@ router.get("/newlist", async (ctx) => {
 
 router.get("/notMatchMakerTxList", async (ctx) => {
   let {
-    current = 0,
+    current = 1,
     size = 10,
     startTime: start,
     endTime: end,
     makerAddress,
     state,
   } = ctx.query;
-  const skip = Number(current) * size;
+  current = Number(current)
+  if (!current) {
+    current = 1
+  }
+  const skip = (current - 1) * size;
   let bind_status = ["Error", "multi", "too_old"];
   if (["Error", "multi", "too_old"].includes(state)) {
     bind_status= [state]
