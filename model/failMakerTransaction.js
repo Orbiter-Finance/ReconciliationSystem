@@ -2,7 +2,7 @@ let mongoose = require('mongoose');
 
 let Schema = mongoose.Schema;
 
-let makerTx = new Schema({
+let failMakerTransaction = new Schema({
     id: { type: Number, unique: true },
     transcationId: String,
     inId: Number,
@@ -20,4 +20,4 @@ let makerTx = new Schema({
     confirmStatus: { type: String, index: true, default: 'noConfirm' }, // noConfirm, successByAdmin,failByAdmin
 });
 
-module.exports = mongoose.model('makerTx', makerTx, 'makerTx');
+module.exports = mongoose.model('failMakerTransaction', failMakerTransaction, 'failMakerTransaction');

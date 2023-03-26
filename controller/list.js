@@ -2,7 +2,7 @@ const Router = require("koa-router");
 
 const db = require("../model/index");
 const fakerMakerTx = require("../model/fakerMakerTx");
-const makerTx = require("../model/makerTx");
+const makerTx = require("../model/failMakerTransaction");
 const txServices = require("../mock/txServices");
 const bluebird = require("bluebird");
 const _ = require("lodash");

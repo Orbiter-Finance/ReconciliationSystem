@@ -1,5 +1,5 @@
 const pool = require('../model/dashbroddb')
-const makerTxModel = require('../model/makerTx')
+const makerTxModel = require('../model/failMakerTransaction')
 const bluebird = require('bluebird')
 const init = require('../model/initMongodb')
 const fakerMakerTx = require('../model/fakerMakerTx')
