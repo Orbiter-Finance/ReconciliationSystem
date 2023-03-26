@@ -5,8 +5,12 @@ const init = require('../model/initMongodb')
 const fakerMakerTx = require('../model/fakerMakerTx')
 const utils = require('../utils')
 const logger = require('../utils/logger')
+const moment = require('moment')
 async function startFecth() {
-  let [list] = await pool.query('SELECT * FROM maker_transaction WHERE ISNULL(outId) AND toChain in (2,3,4,14)')
+  const start = moment().add(-2, 'hour').format('YYYY-MM-DD HH:mm:ss');
+
+  const sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND toChain in (2,3,4,14) AND createdAt <= '${start}'`
+  let [list] = await pool.query(sql)
   try {
     await bluebird.map(list, async (item) => {
       try {
@@ -25,10 +29,10 @@ async function startCheck() {
   const docs = await makerTxModel.find({});
   await bluebird.map(docs, async doc => {
     let id = doc.id;
-    const sql = `SELECT * FROM maker_transaction WHERE \`id\` = ${id} AND outId IS NOT NULL`
+    const sql = `SELECT * FROM maker_transaction mt LEFT JOIN transaction t on mt.inId= t.id WHERE mt.id = ${id} AND (outId IS NOT NULL OR t.status = 99)`
     const [r] = await pool.query(sql);
     if (r.length) {
-      logger.info('delete---', doc)
+      logger.info('delete---', doc.transcationId, r[0].status)
       await makerTxModel.findOneAndDelete({id: id});
     }
   }, { concurrency: 10 })
