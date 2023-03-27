@@ -2,6 +2,7 @@ node_module/
 logs/
 .idea
 public/
+test/
 
 config/env.js
 package-lock.json
