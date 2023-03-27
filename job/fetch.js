@@ -31,12 +31,14 @@ async function startFecth() {
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
         const findOne = await makerTxModel.findOne({ id: Number(newItem.id) });
         if (findOne) {
+          logger.info('update one', newItem.transcationId)
           await makerTxModel.findOneAndUpdate({ id: Number(newItem.id) }, { $set: newItem })
         } else {
           logger.info('new insert', newItem.transcationId)
           await makerTxModel.create(newItem)
         }
       } catch (error) {
+        logger.info(error)
       }
     }, { concurrency: 10 })
   } catch (error) {
