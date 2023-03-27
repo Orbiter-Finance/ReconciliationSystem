@@ -23,6 +23,8 @@ router.get("/newlist", async (ctx) => {
     makerAddress,
     state,
     transactionId,
+    fromChainId,
+    toChainId
   } = ctx.query;
   current = Number(current);
   if (!current || current <= 0) {
@@ -77,6 +79,13 @@ router.get("/newlist", async (ctx) => {
       },
     ];
   }
+  if (toChainId) {
+    where.toChain = { $eq: toChainId }
+  }
+  if (fromChainId) {
+    where.fromChain = { $eq: fromChainId }
+  }
+
   console.log(JSON.stringify(where), skip, size);
   const docs = await makerTx.find(where).sort({ createdAt: -1 }).skip(skip).limit(size).lean();
   const count = await makerTx.count(where);
@@ -146,7 +155,7 @@ router.get("/notMatchMakerTxList", async (ctx) => {
   if (chain && constant.chainDesc.includes(chain)) {
     where.tx_env = { $eq: chain };
   }
-  const txList = await fakerMakerTx.find(where).skip(skip).limit(size).lean();
+  const txList = await fakerMakerTx.find(where).sort({ timestamp: -1 }).skip(skip).limit(size).lean();
   const count = await fakerMakerTx.count(where);
   ctx.body = { data: txList, pages: current, code: 0, size, total: count };
 });
