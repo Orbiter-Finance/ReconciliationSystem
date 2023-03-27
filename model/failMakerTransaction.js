@@ -15,6 +15,7 @@ let failMakerTransaction = new Schema({
     createdAt: { type: Date, index: true },
     updatedAt: Date,
     matchedTx: Object,
+    matchedScanTx: Object,
     warnTxList: { type: Array, default: [] },
     userLog: Object, // { uid name hash updateStatus role updateTime }
     status: { type: String, index: true, default: 'init'}, // init matched warning
