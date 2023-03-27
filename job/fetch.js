@@ -17,22 +17,24 @@ async function startFecth() {
       try {
         const checkSql = `SELECT * FROM transaction WHERE id = ${item.inId} `;
         const [checkResult] = await pool.query(checkSql);
-        if (checkResult.length) {
-          if (checkResult[0].source === 'xvm') {
-            logger.info(`checkResult source error, inId:${item.inId}, source: ${checkResult[0].source}`)
-            return
-          }
-          const value = String(checkResult[0].value);
-          if (!value.substring(value.length - 4).startsWith('90')) {
-            logger.info(`checkResult source value error, inId:${item.inId}, value: ${value}`)
-            return
-          }
+        if (!checkResult.length) {
+          logger.info(`not found transaction: ${item.inId}`)
+          return
+        }
+        if (checkResult[0].source === 'xvm') {
+          logger.info(`checkResult source error, inId:${item.inId}, source: ${checkResult[0].source}`)
+          return
+        }
+        const value = String(checkResult[0].value);
+        if (!value.substring(value.length - 4).startsWith('90')) {
+          logger.info(`checkResult source value error, inId:${item.inId}, value: ${value}`)
+          return
         }
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
         const findOne = await makerTxModel.findOne({ id: Number(newItem.id) });
         if (findOne) {
           // logger.info('update one', newItem.transcationId)
-          newItem.inData = item;
+          newItem.inData = checkResult[0];
           await makerTxModel.findOneAndUpdate({ id: Number(newItem.id) }, { $set: newItem })
         } else {
           logger.info('new insert', newItem.transcationId)
