@@ -121,12 +121,13 @@ router.get("/newlist", async (ctx) => {
       $limit: Number(size)
     }
   ])
-  const [{count}] = await makerTx.aggregate([
+  const r = await makerTx.aggregate([
     ...aggregate,
     {
       $count: "count"
     },
   ])
+  const count = r[0]?.count || 0
   // const docs = await makerTx.find(where).sort({ createdAt: -1 }).skip(skip).limit(size).lean();
   // const count = await makerTx.count(where);
   await bluebird.map(
