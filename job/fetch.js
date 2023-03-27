@@ -54,6 +54,12 @@ async function startCheck() {
   const docs = await makerTxModel.find({});
   await bluebird.map(docs, async doc => {
     let id = doc.id;
+    const value = String(doc.inData.value);
+    if (!value.substring(value.length - 4).startsWith('90')) {
+      logger.info(`delete by value: ${value}, transcationId: ${doc.transcationId}`,)
+      await makerTxModel.findOneAndDelete({id: id});
+      return
+    }
     const sql = `SELECT * FROM maker_transaction mt LEFT JOIN transaction t on mt.inId= t.id WHERE mt.id = ${id} AND (outId IS NOT NULL OR t.status = 99 OR t.source='xvm')`
     const [r] = await pool.query(sql);
     if (r.length) {
