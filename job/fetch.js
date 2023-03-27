@@ -17,7 +17,7 @@ async function startFecth() {
   AND ISNULL(a.outId)
   AND a.createdAt > "2023-03-16"
   AND b.source = 'rpc'
-  AND createdAt <= '${start}'
+  AND a.createdAt <= '${start}'
 `
   let [list] = await pool.query(sql)
   logger.info(`fetch length:`, list.length)
