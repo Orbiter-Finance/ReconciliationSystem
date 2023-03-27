@@ -10,15 +10,6 @@ async function startFecth() {
   const start = moment().add(-2, 'hour').format('YYYY-MM-DD HH:mm:ss');
 
   const sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND createdAt <= '${start}' AND createdAt >= '20230316'`
-//   const sql =`
-//   SELECT *
-//   FROM maker_transaction a, transaction b
-//   WHERE a.inId = b.id
-//   AND ISNULL(a.outId)
-//   AND a.createdAt > "2023-03-16"
-//   AND b.source = 'rpc'
-//   AND a.createdAt <= '${start}'
-// `
   let [list] = await pool.query(sql)
   logger.info(`fetch length:`, list.length)
   try {
@@ -38,7 +29,13 @@ async function startFecth() {
           }
         }
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
-        await makerTxModel.create(newItem)
+        const findOne = await makerTxModel.findOne({ id: Number(newItem.id) });
+        if (findOne) {
+          await makerTxModel.findOneAndUpdate({ id: Number(newItem.id) }, { $set: newItem })
+        } else {
+          logger.info('new insert', newItem.transcationId)
+          await makerTxModel.create(newItem)
+        }
       } catch (error) {
       }
     }, { concurrency: 10 })
