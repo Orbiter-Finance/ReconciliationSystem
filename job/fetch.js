@@ -9,11 +9,27 @@ const moment = require('moment')
 async function startFecth() {
   const start = moment().add(-2, 'hour').format('YYYY-MM-DD HH:mm:ss');
 
-  const sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND toChain in (2,3,4,14) AND createdAt <= '${start}'`
+  const sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND createdAt <= '${start}' AND createdAt >= '20230316'`
+//   const sql =`
+//   SELECT *
+//   FROM maker_transaction a, transaction b
+//   WHERE a.inId = b.id
+//   AND ISNULL(a.outId)
+//   AND a.createdAt > "2023-03-16"
+//   AND b.source = 'rpc'
+//   AND a.createdAt <= '${start}'
+// `
   let [list] = await pool.query(sql)
+  logger.info(`fetch length:`, list.length)
   try {
     await bluebird.map(list, async (item) => {
       try {
+        const checkSql = `SELECT * FROM transaction WHERE id = ${item.inId} AND source != 'rpc'`;
+        const [checkResult] = await pool.query(checkSql);
+        if (checkResult.length) {
+          // logger.info(`checkResult source:${checkResult[0].source}, inId:${item.inId}`)
+          return;
+        }
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
         await makerTxModel.create(newItem)
       } catch (error) {

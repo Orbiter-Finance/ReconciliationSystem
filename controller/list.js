@@ -12,7 +12,8 @@ const router = new Router();
 const dashbroddb = require("../model/dashbroddb");
 const constant = require('../constant');
 const { getFormatDate } = require("../utils/index");
-
+const mongoose = require('mongoose')
+require('mongoose-long')(mongoose);
 router.get("/newlist", async (ctx) => {
   let {
     current = 1,
@@ -24,7 +25,9 @@ router.get("/newlist", async (ctx) => {
     state,
     transactionId,
     fromChainId,
-    toChainId
+    toChainId,
+    minAmount,
+    maxAmount,
   } = ctx.query;
   current = Number(current);
   if (!current || current <= 0) {
@@ -86,9 +89,46 @@ router.get("/newlist", async (ctx) => {
     where.fromChain = { $eq: fromChainId }
   }
 
+  if (minAmount) {
+    where.numberToAmount = { $gte: mongoose.Types.Long.fromString(minAmount) }
+  } 
+  if (maxAmount) {
+    if (!minAmount) {
+      where.numberToAmount = { $lte: mongoose.Types.Long.fromString(maxAmount) }
+    } else {
+      where.numberToAmount = { ...where.numberToAmount, $lte: mongoose.Types.Long.fromString(maxAmount) }
+    }
+  }
+
   console.log(JSON.stringify(where), skip, size);
-  const docs = await makerTx.find(where).sort({ createdAt: -1 }).skip(skip).limit(size).lean();
-  const count = await makerTx.count(where);
+  const aggregate = [
+    {
+      "$addFields": { "numberToAmount": { $convert: { input: "$toAmount", "to":"long", "onError": 0 } } }
+    },
+    {
+      $match: where
+    },
+  ]
+  const docs = await makerTx.aggregate([
+    ...aggregate,
+    {
+      $sort: { createdAt: -1 }
+    },
+    {
+      $skip: skip,
+    },
+    {
+      $limit: Number(size)
+    }
+  ])
+  const [{count}] = await makerTx.aggregate([
+    ...aggregate,
+    {
+      $count: "count"
+    },
+  ])
+  // const docs = await makerTx.find(where).sort({ createdAt: -1 }).skip(skip).limit(size).lean();
+  // const count = await makerTx.count(where);
   await bluebird.map(
     docs,
     async (doc) => {
@@ -161,13 +201,24 @@ router.get("/notMatchMakerTxList", async (ctx) => {
 });
 
 router.get("/statistic", async (ctx) => {
-  let { startTime: start, endTime: end } = ctx.query;
+  let {
+    startTime: start,
+    endTime: end,
+    fromChainId,
+    toChainId
+  } = ctx.query;
   const where = {};
   if (start && end) {
     where.createdAt = {
       $gt: new Date(Number(start)),
       $lte: new Date(Number(end)),
     };
+  }
+  if (toChainId) {
+    where.toChain = { $eq: toChainId }
+  }
+  if (fromChainId) {
+    where.fromChain = { $eq: fromChainId }
   }
   const successByMatchedWhere = { ...where, status: { $eq: "matched" } };
   const successByAdminCountWhere = {
