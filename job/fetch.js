@@ -54,8 +54,8 @@ async function startCheck() {
   const docs = await makerTxModel.find({});
   await bluebird.map(docs, async doc => {
     let id = doc.id;
-    const value = String(doc.inData.value);
-    if (!value.substring(value.length - 4).startsWith('90')) {
+    const value = String(doc.inData?.value);
+    if (value && !value.substring(value.length - 4).startsWith('90')) {
       logger.info(`delete by value: ${value}, transcationId: ${doc.transcationId}`,)
       await makerTxModel.findOneAndDelete({id: id});
       return
