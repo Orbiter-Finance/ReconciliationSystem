@@ -31,7 +31,8 @@ async function startFecth() {
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
         const findOne = await makerTxModel.findOne({ id: Number(newItem.id) });
         if (findOne) {
-          logger.info('update one', newItem.transcationId)
+          // logger.info('update one', newItem.transcationId)
+          newItem.inData = item;
           await makerTxModel.findOneAndUpdate({ id: Number(newItem.id) }, { $set: newItem })
         } else {
           logger.info('new insert', newItem.transcationId)
