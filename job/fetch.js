@@ -24,11 +24,18 @@ async function startFecth() {
   try {
     await bluebird.map(list, async (item) => {
       try {
-        const checkSql = `SELECT * FROM transaction WHERE id = ${item.inId} AND source != 'rpc'`;
+        const checkSql = `SELECT * FROM transaction WHERE id = ${item.inId} `;
         const [checkResult] = await pool.query(checkSql);
         if (checkResult.length) {
-          // logger.info(`checkResult source:${checkResult[0].source}, inId:${item.inId}`)
-          return;
+          if (checkResult[0].source === 'xvm') {
+            logger.info(`checkResult source error, inId:${item.inId}, source: ${checkResult[0].source}`)
+            return
+          }
+          const value = String(checkResult[0].value);
+          if (!value.substring(value.length - 4).startsWith('90')) {
+            logger.info(`checkResult source value error, inId:${item.inId}, value: ${value}`)
+            return
+          }
         }
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
         await makerTxModel.create(newItem)
