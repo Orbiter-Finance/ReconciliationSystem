@@ -14,6 +14,7 @@ let failMakerTransaction = new Schema({
     replyAccount: String,
     createdAt: { type: Date, index: true },
     updatedAt: Date,
+    inData: Object,
     matchedTx: Object,
     matchedScanTx: Object,
     warnTxList: { type: Array, default: [] },
