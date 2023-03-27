@@ -161,13 +161,24 @@ router.get("/notMatchMakerTxList", async (ctx) => {
 });
 
 router.get("/statistic", async (ctx) => {
-  let { startTime: start, endTime: end } = ctx.query;
+  let {
+    startTime: start,
+    endTime: end,
+    fromChainId,
+    toChainId
+  } = ctx.query;
   const where = {};
   if (start && end) {
     where.createdAt = {
       $gt: new Date(Number(start)),
       $lte: new Date(Number(end)),
     };
+  }
+  if (toChainId) {
+    where.toChain = { $eq: toChainId }
+  }
+  if (fromChainId) {
+    where.fromChain = { $eq: fromChainId }
   }
   const successByMatchedWhere = { ...where, status: { $eq: "matched" } };
   const successByAdminCountWhere = {
