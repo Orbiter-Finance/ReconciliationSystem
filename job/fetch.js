@@ -15,7 +15,7 @@ async function startFecth() {
   try {
     await bluebird.map(list, async (item) => {
       try {
-        const checkSql = `SELECT * FROM transaction WHERE id = ${item.inId} AND source = 'rpc'`;
+        const checkSql = `SELECT * FROM transaction WHERE id = ${item.inId} AND source != 'rpc'`;
         const [checkResult] = await pool.query(sql);
         if (checkResult.length) {
           logger.info(`checkResult source:${checkResult[0].source}, inId:${item.inId}`)
