@@ -12,8 +12,10 @@ const router = new Router();
 const dashbroddb = require("../model/dashbroddb");
 const constant = require('../constant');
 const { getFormatDate } = require("../utils/index");
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
+const logger = require("../utils/logger");
 require('mongoose-long')(mongoose);
+const ethers = require('ethers')
 router.get("/newlist", async (ctx) => {
   let {
     current = 1,
@@ -275,6 +277,26 @@ router.get("/statistic", async (ctx) => {
     },
     { concurrency: 3 }
   );
+  const result = await makerTx.aggregate([
+    {
+      $match: failByUnknownCountWhere
+    },
+    {
+      $addFields: { "numberToAmount": { $convert: { input: "$toAmount", "to":"long", "onError": 0 } } }
+    },
+    {
+        $group: { _id : "$inData.extra.toSymbol", "count2":{"$sum": "$numberToAmount"} }
+    },
+    {
+        $addFields: { "count": { $convert: { input: "$count2", "to":"string", "onError": 0 } } }
+    }
+  ])
+  const pendingPay = {}
+  if (result.length) {
+    result.map(e => {
+      pendingPay[e._id] = ethers.formatUnits(parseFloat(e.count).toString(), constant.decimalMap[e._id] || 18)
+    })
+  }
   ctx.body = {
     data: {
       successByMatchedCount,
@@ -282,6 +304,7 @@ router.get("/statistic", async (ctx) => {
       failByAdminCount,
       failByMultiCount,
       failByUnknownCount,
+      pendingPay
     },
     code: 0,
   };
