@@ -29,7 +29,7 @@ async function startCheck() {
   const docs = await makerTxModel.find({});
   await bluebird.map(docs, async doc => {
     let id = doc.id;
-    const sql = `SELECT * FROM maker_transaction mt LEFT JOIN transaction t on mt.inId= t.id WHERE mt.id = ${id} AND (outId IS NOT NULL OR t.status = 99)`
+    const sql = `SELECT * FROM maker_transaction mt LEFT JOIN transaction t on mt.inId= t.id WHERE mt.id = ${id} AND (outId IS NOT NULL OR t.status = 99 OR t.source='xvm')`
     const [r] = await pool.query(sql);
     if (r.length) {
       logger.info('delete---', doc.transcationId, r[0].status)
