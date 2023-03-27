@@ -12,7 +12,7 @@ let failMakerTransaction = new Schema({
     toAmount: String,
     replySender: String,
     replyAccount: String,
-    createdAt: Date,
+    createdAt: { type: Date, index: true },
     updatedAt: Date,
     matchedTx: Object,
     warnTxList: { type: Array, default: [] },
