@@ -171,14 +171,14 @@ router.get("/newlist", async (ctx) => {
 
       // find user tx
 
-      const inId = doc.inId;
-      const sql = `SELECT * FROM transaction WHERE id = ${inId}`;
-      const [r] = await dashbroddb.query(sql);
-      if (r.length) {
-        doc.inData = r[0];
-        if (doc.inData?.timestamp) doc.inData.timestamp = getFormatDate(doc.inData.timestamp);
-        if (doc.inData?.createdAt) doc.inData.createdAt = getFormatDate(doc.inData.createdAt);
-      }
+      // const inId = doc.inId;
+      // const sql = `SELECT * FROM transaction WHERE id = ${inId}`;
+      // const [r] = await dashbroddb.query(sql);
+      // if (r.length) {
+      //   doc.inData = r[0];
+      // }
+      if (doc.inData?.timestamp) doc.inData.timestamp = getFormatDate(doc.inData.timestamp, 0);
+      if (doc.inData?.createdAt) doc.inData.createdAt = getFormatDate(doc.inData.createdAt);
     },
     { concurrency: 10 }
   );
