@@ -45,7 +45,15 @@ router.get("/newlist", async (ctx) => {
     };
   }
   if (transactionId) {
-    where.inId = { $eq: Number(transactionId) };
+    if (/^\d+$/.test(transactionId)) {
+      where.inId = { $eq: Number(transactionId) };
+    } else {
+      where.$or = [
+        { transcationId: { $eq: transactionId } },
+        { replyAccount:  { $eq: transactionId } },
+        { 'inData.hash':  { $eq: transactionId } }
+      ]
+    }
   }
   state = Number(state);
   if (state === constant.state.successByMatched) {
