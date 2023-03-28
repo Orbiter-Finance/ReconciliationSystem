@@ -33,7 +33,7 @@ async function startFecth() {
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
         const findOne = await makerTxModel.findOne({ id: Number(newItem.id) });
         if (findOne) {
-          // logger.info('update one', newItem.transcationId)
+          logger.info('update one', newItem.id)
           newItem.inData = checkResult[0];
           await makerTxModel.findOneAndUpdate({ id: Number(newItem.id) }, { $set: newItem })
         } else {
@@ -84,16 +84,21 @@ async function startMatch() {
       return utils.isEqualsAddress(e.to_address, doc.replyAccount)
     })
     if (filterResult.length === 1) {
-      let newDoc = doc.toJSON()
-      newDoc.status = 'matched'
-      newDoc.matchedTx = filterResult[0];
-      let ur = await makerTxModel.findOneAndUpdate({ id: doc.id }, newDoc)
+      const update = {
+        status: 'matched',
+        matchedTx: filterResult
+      };
+      let ur = await makerTxModel.findOneAndUpdate({ id: doc.id }, { $set: update })
       logger.info(`${doc.transcationId}: match success`)
     } else if (filterResult.length > 1) {
-      let newDoc = doc.toJSON()
-      newDoc.status = 'warning'
-      newDoc.warnTxList = filterResult.map(item => item.tx_hash);
-      let ur = await makerTxModel.findOneAndUpdate({ id: doc.id }, newDoc)
+      const update = {
+        status: 'warning',
+        warnTxList: filterResult.map(item => item.tx_hash)
+      };
+      // let newDoc = doc.toJSON()
+      // newDoc.status = 'warning'
+      // newDoc.warnTxList = filterResult.map(item => item.tx_hash);
+      let ur = await makerTxModel.findOneAndUpdate({ id: doc.id }, { $set: update })
       logger.info(`${doc.transcationId}: warning`)
     }
   }, { concurrency: 10 })
