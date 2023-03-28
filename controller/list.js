@@ -12,8 +12,10 @@ const router = new Router();
 const dashbroddb = require("../model/dashbroddb");
 const constant = require('../constant');
 const { getFormatDate } = require("../utils/index");
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
+const logger = require("../utils/logger");
 require('mongoose-long')(mongoose);
+const ethers = require('ethers')
 router.get("/newlist", async (ctx) => {
   let {
     current = 1,
@@ -28,6 +30,7 @@ router.get("/newlist", async (ctx) => {
     toChainId,
     minAmount,
     maxAmount,
+    symbol = 'ETH'
   } = ctx.query;
   current = Number(current);
   if (!current || current <= 0) {
@@ -36,13 +39,21 @@ router.get("/newlist", async (ctx) => {
   const skip = (current - 1) * size;
   const where = {};
   if (start && end) {
-    where.createdAt = {
+    where['inData.timestamp'] = {
       $gt: new Date(Number(start)),
       $lte: new Date(Number(end)),
     };
   }
   if (transactionId) {
-    where.inId = { $eq: Number(transactionId) };
+    if (/^\d+$/.test(transactionId)) {
+      where.inId = { $eq: Number(transactionId) };
+    } else {
+      where.$or = [
+        { transcationId: { $eq: transactionId } },
+        { replyAccount:  { $eq: transactionId } },
+        { 'inData.hash':  { $eq: transactionId } }
+      ]
+    }
   }
   state = Number(state);
   if (state === constant.state.successByMatched) {
@@ -88,19 +99,23 @@ router.get("/newlist", async (ctx) => {
   if (fromChainId) {
     where.fromChain = { $eq: fromChainId }
   }
-
-  if (minAmount) {
-    where.numberToAmount = { $gte: mongoose.Types.Long.fromString(minAmount) }
-  } 
-  if (maxAmount) {
-    if (!minAmount) {
-      where.numberToAmount = { $lte: mongoose.Types.Long.fromString(maxAmount) }
-    } else {
-      where.numberToAmount = { ...where.numberToAmount, $lte: mongoose.Types.Long.fromString(maxAmount) }
+  if (constant.decimalMap[symbol] && (minAmount || maxAmount)) {
+    where['inData.extra.toSymbol'] = { $eq: symbol }
+    if (minAmount) {
+      minAmount = ethers.parseUnits(minAmount, constant.decimalMap[symbol]).toString()
+      where.numberToAmount = { $gte: mongoose.Types.Long.fromString(minAmount) }
+    } 
+    if (maxAmount) {
+      maxAmount = ethers.parseUnits(maxAmount, constant.decimalMap[symbol]).toString()
+      if (!minAmount) {
+        where.numberToAmount = { $lte: mongoose.Types.Long.fromString(maxAmount) }
+      } else {
+        where.numberToAmount = { ...where.numberToAmount, $lte: mongoose.Types.Long.fromString(maxAmount) }
+      }
     }
   }
 
-  console.log(JSON.stringify(where), skip, size);
+  console.log(JSON.stringify(where), minAmount, maxAmount);
   const aggregate = [
     {
       "$addFields": { "numberToAmount": { $convert: { input: "$toAmount", "to":"long", "onError": 0 } } }
@@ -156,13 +171,14 @@ router.get("/newlist", async (ctx) => {
 
       // find user tx
 
-      const inId = doc.inId;
-      const sql = `SELECT * FROM transaction WHERE id = ${inId}`;
-      const [r] = await dashbroddb.query(sql);
-      if (r.length) {
-        doc.inData = r[0];
-        if (doc.inData?.createdAt) doc.inData.createdAt = getFormatDate(doc.inData.createdAt);
-      }
+      // const inId = doc.inId;
+      // const sql = `SELECT * FROM transaction WHERE id = ${inId}`;
+      // const [r] = await dashbroddb.query(sql);
+      // if (r.length) {
+      //   doc.inData = r[0];
+      // }
+      if (doc.inData?.timestamp) doc.inData.timestamp = getFormatDate(doc.inData.timestamp, 0);
+      if (doc.inData?.createdAt) doc.inData.createdAt = getFormatDate(doc.inData.createdAt);
     },
     { concurrency: 10 }
   );
@@ -210,7 +226,7 @@ router.get("/statistic", async (ctx) => {
   } = ctx.query;
   const where = {};
   if (start && end) {
-    where.createdAt = {
+    where['inData.timestamp'] = {
       $gt: new Date(Number(start)),
       $lte: new Date(Number(end)),
     };
@@ -223,11 +239,11 @@ router.get("/statistic", async (ctx) => {
   }
   const successByMatchedWhere = { ...where, status: { $eq: "matched" } };
   const successByAdminCountWhere = {
-    ...where,
+    // ...where,  ignore time
     confirmStatus: { $eq: constant.confirmStatus.successByAdmin },
   };
   const failByAdminCountWhere = {
-    ...where,
+    // ...where,
     confirmStatus: { $eq: constant.confirmStatus.failByAdmin },
   };
   const failByMultiAnd = [
@@ -275,6 +291,26 @@ router.get("/statistic", async (ctx) => {
     },
     { concurrency: 3 }
   );
+  const result = await makerTx.aggregate([
+    {
+      $match: failByUnknownCountWhere
+    },
+    {
+      $addFields: { "numberToAmount": { $convert: { input: "$toAmount", "to":"long", "onError": 0 } } }
+    },
+    {
+        $group: { _id : "$inData.extra.toSymbol", "count2":{"$sum": "$numberToAmount"} }
+    },
+    {
+        $addFields: { "count": { $convert: { input: "$count2", "to":"string", "onError": 0 } } }
+    }
+  ])
+  const pendingPay = {}
+  if (result.length) {
+    result.map(e => {
+      pendingPay[e._id] = ethers.formatUnits(parseFloat(e.count).toString(), constant.decimalMap[e._id] || 18)
+    })
+  }
   ctx.body = {
     data: {
       successByMatchedCount,
@@ -282,6 +318,7 @@ router.get("/statistic", async (ctx) => {
       failByAdminCount,
       failByMultiCount,
       failByUnknownCount,
+      pendingPay
     },
     code: 0,
   };

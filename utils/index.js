@@ -12,9 +12,9 @@ function isEqualsAddress(addressA, addressB) {
   }
 }
 
-function getFormatDate(date) {
+function getFormatDate(date, timeZone = 8) {
   const timestamp = new Date(date || new Date().valueOf());
-  const timeZone = 8;
+  // const timeZone = timeZone;
   return moment(timestamp).utcOffset(`${ timeZone < 0 ? "-" : "+" }${ Math.abs(timeZone) < 10 ? "0" + Math.abs(timeZone) : Math.abs(timeZone) }:00`).format("YYYY-MM-DD HH:mm:ss");
 }
 
