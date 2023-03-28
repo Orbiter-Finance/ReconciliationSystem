@@ -1,10 +1,7 @@
 const mongoose = require("mongoose");
 const env = require("../config/env");
 
-const con = mongoose.createConnection(env.mongodbStarknetTx.url);
-
-module.exports = con;
-
-(async function name() {
-  const res = await con.asPromise();
-})();
+module.exports = {
+  starknetTxConnection: mongoose.createConnection(env.mongodbStarknetTx.url),
+  zk2Connection: mongoose.createConnection(env.mongodbZK2Tx.url),
+};

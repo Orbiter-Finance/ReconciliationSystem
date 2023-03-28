@@ -3,7 +3,7 @@ const db2 = require('./initdb2')
 let Schema = mongoose.Schema;
 
 let starknetTx = new Schema({
-  _id: Schema.Types.ObjectId,
+  _id: String,
   block_hash: String,
   block_number: Number,
   calldata: Array,
@@ -13,4 +13,4 @@ let starknetTx = new Schema({
   input: Array,
 });
 
-module.exports = db2.model("Starknet", starknetTx, "Starknet");
+module.exports = db2.starknetTxConnection.model("Starknet", starknetTx, "Starknet");

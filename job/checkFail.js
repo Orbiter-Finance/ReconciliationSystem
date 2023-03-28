@@ -1,6 +1,8 @@
 const makerTxModel = require("../model/failMakerTransaction");
 const starknetTxModel = require("../model/starknetTx");
-const { BigNumber } = require("bignumber.js");
+const zk2TxModel = require("../model/zk2Tx");
+
+const { BigNumber } = require("@ethersproject/bignumber");
 const axios = require("axios");
 const init = require("../model/initMongodb");
 
@@ -29,22 +31,55 @@ const isStarknet = function (makerTx) {
   }
   return false;
 };
+const isZk1 = function (makerTx) {
+  if (makerTx.toChain && makerTx.toChain === "14") {
+    return true;
+  }
+  return false;
+};
+const isZk2 = function (makerTx) {
+  if (makerTx.toChain && makerTx.toChain === "3") {
+    return true;
+  }
+  return false;
+};
 const checkStarknetTx = async function (makerTx) {
   if (!makerTx.replyAccount || !makerTx.toAmount) {
     return false;
   }
+
+  const toAmount = makerTx.toAmount.slice(0, makerTx.toAmount.length - 4) + "0000";
   const matcheds = await starknetTxModel.find({
-    "input.6": new BigNumber(makerTx.replyAccount).toString(),
-    "input.7": new BigNumber(makerTx.toAmount).toString(),
+    "input.6": BigNumber.from(makerTx.replyAccount).toString(),
+    "input.7": BigNumber.from(toAmount).toString(),
   });
-  console.log("starknet", makerTx.transcationId, makerTx.toAmount);
+
+  console.log(BigNumber.from(makerTx.replyAccount).toString(), BigNumber.from(toAmount).toString());
+
+  console.log(matcheds)
+
   if (matcheds.length && matcheds.length === 1) {
     return matcheds[0];
   }
 
   return false;
 };
+const checkZk1Tx = async function (makerTx) {
+  if (!makerTx.replyAccount || !makerTx.toAmount) {
+    return false;
+  }
 
+  const matcheds = await zk2TxModel.find({
+    to: makerTx.replyAccount,
+    value: BigNumber.from(makerTx.toAmount).toHexString(),
+  });
+  console.log("zk1", makerTx.transcationId, makerTx.toAmount);
+  if (matcheds.length && matcheds.length === 1) {
+    return matcheds[0];
+  }
+
+  return false;
+};
 const getUrl = function (makerTx) {
   const evn_map = {
     1: "ethereum",
@@ -55,10 +90,15 @@ const getUrl = function (makerTx) {
     14: "zksyncera",
     4: "starknet",
     66: "polygon",
+    3: "zk1",
   };
 
   if (!makerTx.replyAccount || !makerTx.toChain || !evn_map[makerTx.toChain]) {
     return undefined;
+  }
+
+  if (isZk2(makerTx)) {
+    return `https://api.zksync.io/api/v0.2/accounts/${makerTx.replyAccount}/transactions?from=latest&limit=100&direction=older`;
   }
 
   const url = configs.scan[evn_map[makerTx.toChain]];
@@ -78,18 +118,34 @@ const checkOtherTx = async function (makerTx) {
   try {
     const res = await axios.get(url);
     console.log("url", url, makerTx.transcationId);
-    if (res.data.status === "1" && Array.isArray(res.data.result)) {
-      const list = res.data.result.filter((item) => {
-        if (new BigNumber(makerTx.toAmount).eq(item.value)) {
-          return true;
-        }
-        return false;
-      });
+    if (isZk2(makerTx)) {
+      if (res.data.status === "success" && Array.isArray(res.data.result.list)) {
+        const list = res.data.result.list.filter((item) => {
+          if (BigNumber.from(makerTx.toAmount).eq(item.op.amount)) {
+            return true;
+          }
+          return false;
+        });
 
-      if (list.length && list.length === 1) {
-        return list[0];
+        if (list.length && list.length === 1) {
+          return list[0];
+        }
+        return undefined;
       }
-      return undefined;
+    } else {
+      if (res.data.status === "1" && Array.isArray(res.data.result)) {
+        const list = res.data.result.filter((item) => {
+          if (BigNumber.from(makerTx.toAmount).eq(item.value)) {
+            return true;
+          }
+          return false;
+        });
+
+        if (list.length && list.length === 1) {
+          return list[0];
+        }
+        return undefined;
+      }
     }
     throw new Error(`res error ${res.data.status}`);
   } catch (error) {
@@ -105,8 +161,12 @@ async function check() {
     status: { $nin: ["matched", "warning"] },
     matchedScanTx: { $exists: false },
     toChain: {
-      $in: ["4", "3", "14"],
+      // $in: ["4", "3", "14"],
+      // $in: ["3"],
+      // $in: ["14"],
+      $in: ["4"],
     },
+    transcationId: "0x5ac8b5099a0d714137a940ef487295116d97ef590007eth2",
   });
 
   console.log("fail length:", makerTxs.length);
@@ -116,13 +176,24 @@ async function check() {
 
   for (let index = 0; index < makerTxs.length; index++) {
     const makerTx = makerTxs[index];
-    const res = isStarknet(makerTx) ? await checkStarknetTx(makerTx) : await checkOtherTx(makerTx);
-    // console.log("checkNum ：", checkNum++);
+
+    const res = isStarknet(makerTx)
+      ? await checkStarknetTx(makerTx)
+      : isZk1(makerTx)
+      ? await checkZk1Tx(makerTx)
+      : await checkOtherTx(makerTx);
+
     if (res) {
       await makerTxModel.findOneAndUpdate(
         { id: makerTx.id },
         {
-          matchedScanTx: res,
+          $set: {
+            matchedScanTx: {
+              ...res,
+              hash: res._id,
+            },
+            status: "matched",
+          },
         }
       );
       console.log("update ：", findNum++);
