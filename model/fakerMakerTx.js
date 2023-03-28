@@ -14,4 +14,4 @@ let fakerMakerTx = new Schema({
     bind_status: String,
 });
 
-module.exports = mongoose.model('V1', fakerMakerTx, 'v1');
+module.exports = mongoose.model('V1', fakerMakerTx, 'v2');
