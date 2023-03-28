@@ -6,7 +6,7 @@ const fakerMakerTx = require('../model/fakerMakerTx')
 const utils = require('../utils')
 const logger = require('../utils/logger')
 const moment = require('moment')
-async function startFecth() {
+async function startFetch() {
   const start = moment().add(-2, 'hour').format('YYYY-MM-DD HH:mm:ss');
 
   const sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND createdAt <= '${start}' AND createdAt >= '20230316'`
@@ -106,17 +106,17 @@ async function startMatch() {
 
 async function start() {
   // await init()
-  let fecting = false
+  let fetching = false
   let checking = false
   let matching = false
   setInterval(() => {
-    if (fecting) {
+    if (fetching) {
       logger.info('fecthing')
       return
     }
-    fecting = true
+    fetching = true
     logger.info('start fetching')
-    startFecth().finally(() => { fetching = false;logger.info('end fetch') })
+    startFetch().finally(() => { fetching = false;logger.info('end fetch') })
   }, 30 * 1000)
 
   setInterval(() => {
