@@ -239,11 +239,11 @@ router.get("/statistic", async (ctx) => {
   }
   const successByMatchedWhere = { ...where, status: { $eq: "matched" } };
   const successByAdminCountWhere = {
-    ...where,
+    // ...where,  ignore time
     confirmStatus: { $eq: constant.confirmStatus.successByAdmin },
   };
   const failByAdminCountWhere = {
-    ...where,
+    // ...where,
     confirmStatus: { $eq: constant.confirmStatus.failByAdmin },
   };
   const failByMultiAnd = [
