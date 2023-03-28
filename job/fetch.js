@@ -111,7 +111,7 @@ async function start() {
   let matching = false
   setInterval(() => {
     if (fetching) {
-      logger.info('fecthing')
+      logger.info('fetching')
       return
     }
     fetching = true
