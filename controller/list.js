@@ -176,7 +176,7 @@ router.get("/newlist", async (ctx) => {
       const [r] = await dashbroddb.query(sql);
       if (r.length) {
         doc.inData = r[0];
-        if (doc.inData?.timestamp) doc.inData.timestamp = getFormatDate(doc.inData.createdAt);
+        if (doc.inData?.timestamp) doc.inData.timestamp = getFormatDate(doc.inData.timestamp);
         if (doc.inData?.createdAt) doc.inData.createdAt = getFormatDate(doc.inData.createdAt);
       }
     },
