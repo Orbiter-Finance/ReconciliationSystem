@@ -39,7 +39,7 @@ router.get("/newlist", async (ctx) => {
   const skip = (current - 1) * size;
   const where = {};
   if (start && end) {
-    where.createdAt = {
+    where['inData.timestamp'] = {
       $gt: new Date(Number(start)),
       $lte: new Date(Number(end)),
     };
@@ -168,6 +168,7 @@ router.get("/newlist", async (ctx) => {
       const [r] = await dashbroddb.query(sql);
       if (r.length) {
         doc.inData = r[0];
+        if (doc.inData?.timestamp) doc.inData.timestamp = getFormatDate(doc.inData.createdAt);
         if (doc.inData?.createdAt) doc.inData.createdAt = getFormatDate(doc.inData.createdAt);
       }
     },
