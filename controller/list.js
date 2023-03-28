@@ -30,6 +30,7 @@ router.get("/newlist", async (ctx) => {
     toChainId,
     minAmount,
     maxAmount,
+    symbol = 'ETH'
   } = ctx.query;
   current = Number(current);
   if (!current || current <= 0) {
@@ -90,19 +91,23 @@ router.get("/newlist", async (ctx) => {
   if (fromChainId) {
     where.fromChain = { $eq: fromChainId }
   }
-
-  if (minAmount) {
-    where.numberToAmount = { $gte: mongoose.Types.Long.fromString(minAmount) }
-  } 
-  if (maxAmount) {
-    if (!minAmount) {
-      where.numberToAmount = { $lte: mongoose.Types.Long.fromString(maxAmount) }
-    } else {
-      where.numberToAmount = { ...where.numberToAmount, $lte: mongoose.Types.Long.fromString(maxAmount) }
+  if (constant.decimalMap[symbol] && (minAmount || maxAmount)) {
+    where['inData.extra.toSymbol'] = { $eq: symbol }
+    if (minAmount) {
+      minAmount = ethers.parseUnits(minAmount, constant.decimalMap[symbol]).toString()
+      where.numberToAmount = { $gte: mongoose.Types.Long.fromString(minAmount) }
+    } 
+    if (maxAmount) {
+      maxAmount = ethers.parseUnits(maxAmount, constant.decimalMap[symbol]).toString()
+      if (!minAmount) {
+        where.numberToAmount = { $lte: mongoose.Types.Long.fromString(maxAmount) }
+      } else {
+        where.numberToAmount = { ...where.numberToAmount, $lte: mongoose.Types.Long.fromString(maxAmount) }
+      }
     }
   }
 
-  console.log(JSON.stringify(where), skip, size);
+  console.log(JSON.stringify(where), minAmount, maxAmount);
   const aggregate = [
     {
       "$addFields": { "numberToAmount": { $convert: { input: "$toAmount", "to":"long", "onError": 0 } } }
