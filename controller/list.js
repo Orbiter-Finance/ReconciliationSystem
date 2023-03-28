@@ -226,7 +226,7 @@ router.get("/statistic", async (ctx) => {
   } = ctx.query;
   const where = {};
   if (start && end) {
-    where.createdAt = {
+    where['inData.timestamp'] = {
       $gt: new Date(Number(start)),
       $lte: new Date(Number(end)),
     };
