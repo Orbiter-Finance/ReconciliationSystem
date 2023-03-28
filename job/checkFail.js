@@ -1,6 +1,6 @@
 const makerTxModel = require("../model/failMakerTransaction");
 const starknetTxModel = require("../model/starknetTx");
-const zk2TxModel = require("../model/zk2Tx");
+const zksyncliteTxModel = require("../model/zksyncliteTx");
 
 const { BigNumber } = require("@ethersproject/bignumber");
 const axios = require("axios");
@@ -31,13 +31,13 @@ const isStarknet = function (makerTx) {
   }
   return false;
 };
-const isZk1 = function (makerTx) {
+const isZk2 = function (makerTx) {
   if (makerTx.toChain && makerTx.toChain === "14") {
     return true;
   }
   return false;
 };
-const isZk2 = function (makerTx) {
+const isZksynclite = function (makerTx) {
   if (makerTx.toChain && makerTx.toChain === "3") {
     return true;
   }
@@ -51,12 +51,10 @@ const checkStarknetTx = async function (makerTx) {
   const toAmount = makerTx.toAmount.slice(0, makerTx.toAmount.length - 4) + "0000";
   const matcheds = await starknetTxModel.find({
     "input.6": BigNumber.from(makerTx.replyAccount).toString(),
-    "input.7": BigNumber.from(toAmount).toString(),
+    "input.7": {
+      $in: [BigNumber.from(toAmount).toString(), makerTx.toAmount],
+    },
   });
-
-  console.log(BigNumber.from(makerTx.replyAccount).toString(), BigNumber.from(toAmount).toString());
-
-  console.log(matcheds)
 
   if (matcheds.length && matcheds.length === 1) {
     return matcheds[0];
@@ -64,41 +62,39 @@ const checkStarknetTx = async function (makerTx) {
 
   return false;
 };
-const checkZk1Tx = async function (makerTx) {
+const checkZk2Tx = async function (makerTx) {
   if (!makerTx.replyAccount || !makerTx.toAmount) {
     return false;
   }
 
-  const matcheds = await zk2TxModel.find({
+  const matcheds = await zksyncliteTxModel.find({
     to: makerTx.replyAccount,
     value: BigNumber.from(makerTx.toAmount).toHexString(),
   });
-  console.log("zk1", makerTx.transcationId, makerTx.toAmount);
+  console.log("Zk2", makerTx.transcationId, makerTx.toAmount);
   if (matcheds.length && matcheds.length === 1) {
     return matcheds[0];
   }
 
   return false;
 };
+
 const getUrl = function (makerTx) {
+  if (isZksynclite(makerTx)) {
+    return `https://api.zksync.io/api/v0.2/accounts/${makerTx.replyAccount}/transactions?from=latest&limit=100&direction=older`;
+  }
+
   const evn_map = {
     1: "ethereum",
     2: "arbitrum",
-    3: "zksynclite",
     7: "optimism",
     15: "bsc",
-    14: "zksyncera",
     4: "starknet",
     66: "polygon",
-    3: "zk1",
   };
 
   if (!makerTx.replyAccount || !makerTx.toChain || !evn_map[makerTx.toChain]) {
     return undefined;
-  }
-
-  if (isZk2(makerTx)) {
-    return `https://api.zksync.io/api/v0.2/accounts/${makerTx.replyAccount}/transactions?from=latest&limit=100&direction=older`;
   }
 
   const url = configs.scan[evn_map[makerTx.toChain]];
@@ -107,7 +103,7 @@ const getUrl = function (makerTx) {
     return undefined;
   }
 
-  return `${url}?module=account&action=txlist&address=${makerTx.replyAccount}&startblock=0&endblock=99999999&page=1&offset=200&sort=asc&apikey=${key}`;
+  return `${url}?module=account&action=txlist&address=${makerTx.replyAccount}&startblock=0&endblock=99999999&page=1&offset=200&sort=desc&apikey=${key}`;
 };
 const checkOtherTx = async function (makerTx) {
   const url = getUrl(makerTx);
@@ -118,15 +114,17 @@ const checkOtherTx = async function (makerTx) {
   try {
     const res = await axios.get(url);
     console.log("url", url, makerTx.transcationId);
-    if (isZk2(makerTx)) {
+    if (isZksynclite(makerTx)) {
       if (res.data.status === "success" && Array.isArray(res.data.result.list)) {
         const list = res.data.result.list.filter((item) => {
+          if (item.failReason !== null || item.op.type !== "Transfer") {
+            return false;
+          }
           if (BigNumber.from(makerTx.toAmount).eq(item.op.amount)) {
             return true;
           }
           return false;
         });
-
         if (list.length && list.length === 1) {
           return list[0];
         }
@@ -160,13 +158,14 @@ async function check() {
   const makerTxs = await makerTxModel.find({
     status: { $nin: ["matched", "warning"] },
     matchedScanTx: { $exists: false },
-    toChain: {
-      // $in: ["4", "3", "14"],
-      // $in: ["3"],
-      // $in: ["14"],
-      $in: ["4"],
-    },
-    transcationId: "0x5ac8b5099a0d714137a940ef487295116d97ef590007eth2",
+    // toChain: {
+    // $in: ["4", "3", "14"],
+    // $in: ["3"],
+    // $in: ["14"],
+    // $in: ["4"],
+    // },
+    // transcationId: "0x961a9f417cb2eb35dfb9e5afc887c99ae22849120002eth4",
+    // transcationId: "0xeba23a88ff5ebffcc2546ea37aa2ed4ae8363c560006eth899",
   });
 
   console.log("fail length:", makerTxs.length);
@@ -179,8 +178,8 @@ async function check() {
 
     const res = isStarknet(makerTx)
       ? await checkStarknetTx(makerTx)
-      : isZk1(makerTx)
-      ? await checkZk1Tx(makerTx)
+      : isZk2(makerTx)
+      ? await checkZk2Tx(makerTx)
       : await checkOtherTx(makerTx);
 
     if (res) {
