@@ -107,8 +107,8 @@ async function startMatch() {
 async function start() {
   // await init()
   let fetching = false
-  let checking = false
-  let matching = false
+  let checking = true
+  let matching = true
   setInterval(() => {
     if (fetching) {
       logger.info('fetching')
