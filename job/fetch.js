@@ -112,7 +112,7 @@ async function startMatch() {
 async function start() {
   // await init()
   let fetching = false
-  let checking = true
+  let checking = false
   let matching = true
   setInterval(() => {
     if (fetching) {
