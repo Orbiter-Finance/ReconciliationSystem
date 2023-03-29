@@ -168,6 +168,8 @@ router.get("/newlist", async (ctx) => {
           state = constant.state.successByAdmin;
         } else if (confirmStatus === constant.confirmStatus.failByAdmin) {
           state = constant.state.failByAdmin;
+        } else if (confirmStatus === constant.confirmStatus.doubtByAdmin) {
+          state = constant.state.doubtByAdmin;
         } else if (status === "warning") {
           state = constant.state.failByMulti;
         }

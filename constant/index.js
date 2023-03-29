@@ -10,7 +10,8 @@ const state = {
     successByAdmin: 2,
     failByAdmin: 3,
     failByMulti: 4,
-    failByUnknown: 5
+    failByUnknown: 5,
+    doubtByAdmin: 6
 }
 const chainDesc = ['arbitrum', 'ethereum', 'optimism', 'starknet', 'zksyncera', 'zksynclite','polygon','metis','boba','bsc']
 
