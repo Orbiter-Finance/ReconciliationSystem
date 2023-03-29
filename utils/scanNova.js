@@ -41,25 +41,36 @@ const genDataFromHtml  = function (html) {
     if (constant.decimalMap[data.symbol]) {
         data.amount = ethers.parseUnits(data.amount, constant.decimalMap[data.symbol]).toString()
     }
+    const inOrOutSpan = $('.tile-badge')
+    data.size = inOrOutSpan.text().trim()
     return data;
 }
 
-async function scanNova (address, maxCount = 200) {
-    let list = [];
+async function scanNova (address, maxCount = 200, onlyIn = true) {
+    let dataList = [];
+    let allList = [];
     let done = false;
     let url = `${api}${getPath(address)}`;
+    let page = 1;
+    const maxPage = 8;
     while (!done) {
         const r = await axios.get(url)
-        const items = r.data.items
-        list = list.concat(items);
-        if (list.length >= maxCount || !r.data.next_page_path) {
+        const items = r.data.items.map(e => genDataFromHtml(e))
+        // allList = allList.concat(items)
+        if (onlyIn) {
+            dataList = dataList.concat(items.filter(e => e.size === 'IN'))
+        } else {
+            dataList = dataList.concat(items)
+        }
+
+        if (dataList.length >= maxCount || !r.data.next_page_path || page >= maxPage) {
             done = true
         } else {
             url = `${api}${r.data.next_page_path}&type=JSON`
         }
+        page++
     }
-    const dataList = list.map(e => genDataFromHtml(e))
     return dataList
 }
-// scanNova('0xFf600Eb9d9B6d72e744564ED2e13929B746Fa626')
+// scanNova('0x6652152db1aa4402f041a71bed216375a7704fb4')
 module.exports.scanNova = scanNova
