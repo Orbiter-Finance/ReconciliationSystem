@@ -5,7 +5,7 @@ const user = require('../model/user');
 const makerTx = require('../model/failMakerTransaction');
 const remarkModel = require('../model/remark');
 const { encrypt, decrypt, md5 } = require('../utils/encrypt');
-
+const constant = require('../constant/index')
 // async function userMiddleware(ctx, next) {
 //     const { token, baseInfo } = await decrypt(ctx?.req?.headers?.token);
 //     if (token) {
@@ -40,7 +40,7 @@ router.post("/submit", async (ctx) => {
     const { makerTxId, hash } = ctx.request.body;
     const status = +ctx.request.body.status;
     const { uid, name, role } = ctx;
-    if (!makerTxId) {
+    if (!makerTxId || ![0,1,2,3].includes(status)) {
         ctx.body = { code: 1, msg: 'Parameter error' };
         return;
     }
@@ -55,12 +55,14 @@ router.post("/submit", async (ctx) => {
         ctx.body = { code: 1, msg: 'Unable to operate a successful transaction' };
         return;
     }
-    const statusStr = status === 1 ? 'success' : 'fail';
-    let confirmStatus = `${ statusStr }ByAdmin`;
-    if (status === 0) {
-        confirmStatus = 'noConfirm';
+    let confirmStatus;
+    switch(status) {
+        case 0: confirmStatus = constant.confirmStatus.noConfirm;break;
+        case 1: confirmStatus = constant.confirmStatus.successByAdmin;break;
+        case 2: confirmStatus = constant.confirmStatus.failByAdmin;break;
+        case 3: confirmStatus = constant.confirmStatus.doubtByAdmin;break;
     }
-    const userLog = { uid, name, hash, updateStatus: status, role, updateTime: new Date().valueOf() };
+    const userLog = { uid, name, hash, updateStatus: status, role, updateTime: new Date() };
     await makerTx.updateOne({
         id: makerTxId,
     }, { $set: { confirmStatus, userLog } });

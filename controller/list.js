@@ -263,6 +263,7 @@ router.get("/statistic", async (ctx) => {
         $nin: [
           constant.confirmStatus.failByAdmin,
           constant.confirmStatus.successByAdmin,
+          constant.confirmStatus.doubtByAdmin,
         ],
       },
     },
@@ -275,17 +276,28 @@ router.get("/statistic", async (ctx) => {
         $nin: [
           constant.confirmStatus.failByAdmin,
           constant.confirmStatus.successByAdmin,
+          constant.confirmStatus.doubtByAdmin,
         ],
       },
     },
   ];
   const failByUnknownCountWhere = { ...where, $and: failByUnknownAnd };
+  let doubtByAdminAnd = [
+    { status: { $nin: ["matched", "warning"] } },
+    {
+      confirmStatus: {
+        $eq: constant.confirmStatus.doubtByAdmin,
+      },
+    },
+  ];
+  const doubtByAdminCountWhere = {...where, $and: doubtByAdminAnd }
   const tasks = [
     successByMatchedWhere,
     successByAdminCountWhere,
     failByAdminCountWhere,
     failByMultiCountWhere,
     failByUnknownCountWhere,
+    doubtByAdminCountWhere,
   ];
   const [
     successByMatchedCount,
@@ -293,6 +305,7 @@ router.get("/statistic", async (ctx) => {
     failByAdminCount,
     failByMultiCount,
     failByUnknownCount,
+    doubtByAdminCount,
   ] = await bluebird.map(
     tasks,
     async (task) => {
@@ -328,6 +341,7 @@ router.get("/statistic", async (ctx) => {
       failByAdminCount,
       failByMultiCount,
       failByUnknownCount,
+      doubtByAdminCount,
       pendingPay
     },
     code: 0,

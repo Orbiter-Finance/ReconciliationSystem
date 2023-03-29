@@ -1,7 +1,8 @@
 const confirmStatus = {
     noConfirm: 'noConfirm',
     successByAdmin: 'successByAdmin',
-    failByAdmin: 'failByAdmin'
+    failByAdmin: 'failByAdmin',
+    doubtByAdmin: 'doubtByAdmins'
 }
 
 const state = {
