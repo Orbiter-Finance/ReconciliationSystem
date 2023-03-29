@@ -8,6 +8,7 @@ const configs = {
     bsc: "https://api.bscscan.com/api",
     polygon: "https://api.polygonscan.com/api",
     boba: "https://andromeda-explorer.metis.io/api",
+    zkevmPolygon: "https://api-zkevm.polygonscan.com/api",
   },
   scanApikeyMap: {
     arbitrum: "3SSTJW5DHYKUGQIC6ECFVPJZJKI31KSUR8",
@@ -16,9 +17,9 @@ const configs = {
     bsc: "211K4X2NZ82E633CKYG5UZJQHE4YVWB1RT",
     polygon: "KHBPYR3CMVA3PKRUY2EMQ5J18BXNZ3A691",
     boba: "PEZQ5P13NE7ZX8HH3YCH59IPGHEMBEKN3D",
+    zkevmPolygon: "C75VEHQHI28KEIGFCW4Z1DFM3ND871352U",
   },
 };
-
 
 const getUrl = function (makerTx) {
   if (isZksynclite(makerTx)) {
@@ -31,15 +32,18 @@ const getUrl = function (makerTx) {
     7: "optimism",
     15: "bsc",
     4: "starknet",
-    66: "polygon",
+    6: "polygon",
+    17: "zkevmPolygon",
   };
 
-  if (!makerTx.replyAccount || !makerTx.toChain || !evn_map[makerTx.toChain]) {
+  const evn = evn_map[makerTx.toChain];
+
+  if (!makerTx.replyAccount || !makerTx.toChain || !evn) {
     return undefined;
   }
 
-  const url = configs.scan[evn_map[makerTx.toChain]];
-  const key = configs.scanApikeyMap[evn_map[makerTx.toChain]];
+  const url = configs.scan[evn];
+  const key = configs.scanApikeyMap[evn];
   if (!url || !key) {
     return undefined;
   }
@@ -47,4 +51,4 @@ const getUrl = function (makerTx) {
   return `${url}?module=account&action=txlist&address=${makerTx.replyAccount}&startblock=0&endblock=99999999&page=1&offset=200&sort=desc&apikey=${key}`;
 };
 
-module.exports = getUrl
+module.exports = getUrl;

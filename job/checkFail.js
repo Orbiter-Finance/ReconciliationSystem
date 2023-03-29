@@ -8,7 +8,9 @@ const axios = require("axios");
 const init = require("../model/initMongodb");
 const isMaker = require("../utils/isMaker");
 const getScanUrl = require("../utils/getScanUrl");
-const { isZksynclite, isStarknet, isZk2 } = require("../utils/is");
+const getErc20Url = require("../utils/getErc20Url");
+const { scanNova } = require("../utils/scanNova");
+const { isZksynclite, isStarknet, isZk2, isNova, isBSC, isPolygon } = require("../utils/is");
 
 const checkStarknetTx = async function (makerTx) {
   if (!makerTx.replyAccount || !makerTx.toAmount) {
@@ -38,12 +40,97 @@ const checkZk2Tx = async function (makerTx) {
   return matcheds;
 };
 
+const checkNovaTx = async function (makerTx) {
+  if (!makerTx.replyAccount || !makerTx.toAmount) {
+    return false;
+  }
+
+  try {
+    const list = await scanNova(makerTx.replyAccount);
+
+    return list.filter((item) => {
+      if (BigNumber.from(makerTx.toAmount).eq(item.amount) && isMaker(item.from)) {
+        return true;
+      }
+    });
+  } catch (error) {
+    console.log(error);
+    return undefined;
+  }
+};
+
+const checkBSCTx = async function (makerTx) {
+  const url = getErc20Url(makerTx);
+
+  if (!url || !makerTx.toAmount) {
+    return undefined;
+  }
+
+  try {
+    console.log("url", url, makerTx.transcationId);
+
+    const res = await axios.get(url);
+
+    if (res.data.status === "1" && Array.isArray(res.data.result)) {
+      const list = res.data.result.filter((item) => {
+        if (
+          BigNumber.from(makerTx.toAmount).eq(item.value) &&
+          isMaker(item.from) &&
+          item.tokenSymbol === "ETH"
+        ) {
+          return true;
+        }
+        return false;
+      });
+      return list;
+    }
+    throw new Error(`res error ${res.data.status}`);
+  } catch (error) {
+    console.log("get scan data error", error);
+    return undefined;
+  }
+};
+
+const checkPolygonTx = async function (makerTx) {
+  const url = getErc20Url(makerTx);
+
+  if (!url || !makerTx.toAmount) {
+    return undefined;
+  }
+
+  try {
+    console.log("url", url, makerTx.transcationId);
+
+    const res = await axios.get(url);
+
+    if (res.data.status === "1" && Array.isArray(res.data.result)) {
+      const list = res.data.result.filter((item) => {
+        if (
+          BigNumber.from(makerTx.toAmount).eq(item.value) &&
+          isMaker(item.from) &&
+          item.tokenSymbol === "WETH"
+        ) {
+          return true;
+        }
+        return false;
+      });
+      // console.log('list',list)
+      return list;
+    }
+    throw new Error(`res error ${res.data.status}`);
+  } catch (error) {
+    console.log("get scan data error", error);
+    return undefined;
+  }
+};
+
 const checkOtherTx = async function (makerTx) {
   const url = getScanUrl(makerTx);
 
   if (!url || !makerTx.toAmount) {
     return undefined;
   }
+
   try {
     const res = await axios.get(url);
     console.log("url", url, makerTx.transcationId);
@@ -85,14 +172,13 @@ async function check() {
   const makerTxs = await makerTxModel.find({
     status: { $nin: ["matched", "warning"] },
     matchedScanTx: { $exists: false },
-    // toChain: {
+    toChain: {
       // $in: ["4", "3", "14"],
       // $in: ["3"],
       // $in: ["14"],
-      // $in: ["4"],
-    // },
-    // transcationId: "0xdf2a93ddf2c91f93f804fb5018547882e88476a10006eth39",
-    // transcationId: "0xc87e30b9e0dc1d1fb177cebc41eee0d6bdcb650b0002eth0",
+      $in: ["6"],
+    },
+    // transcationId: "0x00bf73062c5865b7fb407df9ba1df0c16775687b3048b9da5f79f1f1ccaac7ad0004eth3",
   });
 
   console.log("fail length:", makerTxs.length);
@@ -103,11 +189,21 @@ async function check() {
   for (let index = 0; index < makerTxs.length; index++) {
     const makerTx = makerTxs[index];
 
-    const res = isStarknet(makerTx)
-      ? await checkStarknetTx(makerTx)
-      : isZk2(makerTx)
-      ? await checkZk2Tx(makerTx)
-      : await checkOtherTx(makerTx);
+    let res;
+
+    if (isStarknet(makerTx)) {
+      res = await checkStarknetTx(makerTx);
+    } else if (isZk2(makerTx)) {
+      res = await checkZk2Tx(makerTx);
+    } else if (isNova(makerTx)) {
+      res = await checkNovaTx(makerTx);
+    } else if (isBSC(makerTx)) {
+      res = await checkBSCTx(makerTx);
+    } else if (isPolygon(makerTx)) {
+      res = await checkPolygonTx(makerTx);
+    } else {
+      res = await checkOtherTx(makerTx);
+    }
 
     if (res && res.length === 1) {
       const [data] = res;
@@ -147,7 +243,6 @@ async function check() {
   }
 }
 
-
-// (async function () {
-//   await check();
-// })();
+(async function () {
+  await check();
+})();
