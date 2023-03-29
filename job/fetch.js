@@ -7,6 +7,15 @@ const utils = require('../utils')
 const logger = require('../utils/logger')
 const moment = require('moment')
 const constant = require('../constant/index')
+const isMaker = require("../utils/isMaker");
+const getScanUrl = require("../utils/getScanUrl");
+const { isZksynclite, isStarknet, isZk2 } = require("../utils/is");
+const starknetTxModel = require("../model/starknetTx");
+const zksyncliteTxModel = require("../model/zksyncliteTx");
+const { BigNumber } = require("@ethersproject/bignumber");
+const BigNumberJs = require("bignumber.js");
+const axios = require('axios')
+
 async function startFetch() {
   const start = moment().add(-2, 'hour').format('YYYY-MM-DD HH:mm:ss');
 
@@ -76,16 +85,16 @@ async function startCheck() {
 
 async function startMatch() {
   let docs = await makerTxModel.find({ status: { $ne: 'matched' }})
-  // console.log('docs.length:',docs.length)
+  // logger.info('docs.length:',docs.length)
   await bluebird.map(docs, async (doc) => {
     const hits = await fakerMakerTx.find({amount: doc.toAmount});
-    // console.log('hits.length:', hits.length)
+    // logger.info('hits.length:', hits.length)
     if (!hits.length) {
       return
     }
     
     const filterResult = hits.filter(e => {
-      // console.log('address:',e.to_address, doc.replyAccount, doc.replyAccount===e.to_address, utils.isEqualsAddress(e.to_address, doc.replyAccount))
+      // logger.info('address:',e.to_address, doc.replyAccount, doc.replyAccount===e.to_address, utils.isEqualsAddress(e.to_address, doc.replyAccount))
       return utils.isEqualsAddress(e.to_address, doc.replyAccount)
     })
     if (filterResult.length === 1) {
@@ -109,19 +118,143 @@ async function startMatch() {
   }, { concurrency: 10 })
 }
 
+
+
+const checkStarknetTx = async function (makerTx) {
+  if (!makerTx.replyAccount || !makerTx.toAmount) {
+    return false;
+  }
+
+  const toAmount = makerTx.toAmount.slice(0, makerTx.toAmount.length - 4) + "0000";
+  const matcheds = await starknetTxModel.find({
+    "input.6": BigNumber.from(makerTx.replyAccount).toString(),
+    "input.7": {
+      $in: [BigNumber.from(toAmount).toString(), makerTx.toAmount],
+    },
+  });
+
+  return matcheds;
+};
+const checkZk2Tx = async function (makerTx) {
+  if (!makerTx.replyAccount || !makerTx.toAmount) {
+    return false;
+  }
+
+  const matcheds = await zksyncliteTxModel.find({
+    to: makerTx.replyAccount.toLowerCase(),
+    value: "0x" + new BigNumberJs(makerTx.toAmount).toString(16),
+  });
+
+  return matcheds;
+};
+
+const checkOtherTx = async function (makerTx) {
+  const url = getScanUrl(makerTx);
+
+  if (!url || !makerTx.toAmount) {
+    return undefined;
+  }
+  try {
+    const res = await axios.get(url);
+    logger.info("url", url, makerTx.transcationId);
+    if (isZksynclite(makerTx)) {
+      if (res.data.status === "success" && Array.isArray(res.data.result.list)) {
+        const list = res.data.result.list.filter((item) => {
+          if (item.failReason !== null || item.op.type !== "Transfer") {
+            return false;
+          }
+          if (BigNumber.from(makerTx.toAmount).eq(item.op.amount) && isMaker(item.op.from)) {
+            return true;
+          }
+          return false;
+        });
+        return list;
+      }
+    } else {
+      if (res.data.status === "1" && Array.isArray(res.data.result)) {
+        const list = res.data.result.filter((item) => {
+          if (BigNumber.from(makerTx.toAmount).eq(item.value) && isMaker(item.from)) {
+            return true;
+          }
+          return false;
+        });
+
+        return list;
+      }
+    }
+    throw new Error(`res error ${res.data.status}`);
+  } catch (error) {
+    logger.error("get scan data error", error);
+    return undefined;
+  }
+};
+
+async function startMatch2() {
+  logger.info(`startMatch2`)
+  const makerTxs = await makerTxModel.find({
+    status: { $nin: ["matched", "warning"] },
+    matchedScanTx: { $exists: false }
+  });
+  let findNum = 0;
+  logger.info(`startMatch2: makerTxs.length:${makerTxs.length}`)
+  await bluebird.map(makerTxs, async makerTx => {
+    const res = isStarknet(makerTx)
+    ? await checkStarknetTx(makerTx)
+    : isZk2(makerTx)
+    ? await checkZk2Tx(makerTx)
+    : await checkOtherTx(makerTx);
+    
+    if (res && res.length === 1) {
+      const [data] = res;
+      await makerTxModel.findOneAndUpdate(
+        { id: makerTx.id },
+        {
+          $set: {
+            matchedScanTx: {
+              ...data,
+              hash: data.hash ? data.hash : data._id,
+            },
+            status: "matched",
+          },
+        }
+      );
+      logger.info("更新 ：", findNum++);
+      logger.info("剩下没找到 ：", makerTxs.length - findNum);
+    }
+
+    if (res && res.length > 1) {
+      await makerTxModel.findOneAndUpdate(
+        { id: makerTx.id },
+        {
+          $set: {
+            warnTxList: res.map((item) =>
+              item.hash ? item.hash : item.txHash ? item.txHash : item._id
+            ),
+            status: "warning",
+          },
+        }
+      );
+      logger.info("更新 ：", findNum++);
+      logger.info("剩下没找到 ：", makerTxs.length - findNum);
+    }
+  }, { concurrency: 2 })
+}
+
+
 async function start() {
   // await init()
   let fetching = false
   let checking = false
-  let matching = true
+  let matching = false
   setInterval(() => {
     if (fetching) {
       logger.info('fetching')
       return
     }
     fetching = true
-    logger.info('start fetching')
-    startFetch().finally(() => { fetching = false;logger.info('end fetch') })
+    let start = moment().format('YYYY-MM-DD HH:mm:ss');
+    logger.info(`start fetching at at ${moment().format('YYYY-MM-DD HH:mm:ss')}`)
+    startFetch().finally(() => { fetching = false;logger.info(`end fetch: start:${start} end:${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
   }, 30 * 1000)
 
   setInterval(() => {
@@ -129,9 +262,10 @@ async function start() {
       logger.info('checking')
       return
     }
-    logger.info('start checking')
+    let start = moment().format('YYYY-MM-DD HH:mm:ss');
+    logger.info(`start checking at ${start}`)
     checking = true
-    startCheck().finally(() => { checking = false;logger.info('end check') })
+    startCheck().finally(() => { checking = false;logger.info(`end check start:${start} end:${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
   }, 30 * 1000)
 
   setInterval(() => {
@@ -139,9 +273,10 @@ async function start() {
       logger.info('matching')
       return
     }
-    logger.info('start matching')
+    let start = moment().format('YYYY-MM-DD HH:mm:ss');
+    logger.info(`start matching at ${start}`)
     matching = true
-    startMatch().finally(() => { matching = false;logger.info('end match') })
+    startMatch2().finally(() => { matching = false;logger.info(`end match start:${start} end: ${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
   }, 30 * 1000)
 }
 // start()
