@@ -390,6 +390,9 @@ router.get("/userTxList", async (ctx) => {
     });
   } else if (is.isArbNova(failTx)) {
     list = await arbNovaScan.scanNova(failTx.replyAccount, 200);
+    list = list.filter(e => {
+      return moment(new Date(e.createdAt)).isAfter(moment(new Date(failTxTime)))
+    })
   } else {
     const url = getUrl(failTx);
     if (!url) {
