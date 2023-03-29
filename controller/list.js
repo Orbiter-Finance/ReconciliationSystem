@@ -84,10 +84,18 @@ router.get("/newlist", async (ctx) => {
           $nin: [
             constant.confirmStatus.failByAdmin,
             constant.confirmStatus.successByAdmin,
+            constant.confirmStatus.doubtByAdmin,
           ],
         },
       },
     ];
+  } else if (state === constant.state.doubtByAdmin) {
+    where.$and = [
+      { status: { $nin: ["matched", "warning"] } },
+      { 
+        confirmStatus: { $eq: constant.confirmStatus.doubtByAdmin }
+      }
+    ]
   } else if (state === constant.state.failByUnknown) {
     where.$and = [
       { status: { $nin: ["matched", "warning"] } },
@@ -96,6 +104,7 @@ router.get("/newlist", async (ctx) => {
           $nin: [
             constant.confirmStatus.failByAdmin,
             constant.confirmStatus.successByAdmin,
+            constant.confirmStatus.doubtByAdmin,
           ],
         },
       },
