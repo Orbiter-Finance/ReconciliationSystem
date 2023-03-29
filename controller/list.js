@@ -24,6 +24,8 @@ const { BigNumber } = require("@ethersproject/bignumber");
 const isMaker = require("../utils/isMaker");
 const remarkModel = require('../model/remark')
 const zksyncliteTxModel = require("../model/zksyncliteTx");
+const arbNovaScan = require('../utils/scanNova')
+
 router.get("/newlist", async (ctx) => {
   let {
     current = 1,
@@ -386,6 +388,11 @@ router.get("/userTxList", async (ctx) => {
     list = await zksyncliteTxModel.find({
       to: failTx.replyAccount.toLowerCase(),
     });
+  } else if (is.isArbNova(failTx)) {
+    list = await arbNovaScan.scanNova(failTx.replyAccount, 200);
+    list = list.filter(e => {
+      return moment(new Date(e.createdAt)).isAfter(moment(new Date(failTxTime)))
+    })
   } else {
     const url = getUrl(failTx);
     if (!url) {

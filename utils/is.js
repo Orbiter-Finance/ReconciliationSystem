@@ -35,11 +35,20 @@ const isPolygon = function (makerTx) {
   return false;
 };
 
+const isArbNova = function (makerTx) {
+  if (makerTx.toChain && makerTx.toChain === "16") {
+    return true;
+  }
+  return false;
+}
+
+
 module.exports = {
   isStarknet,
   isZk2,
   isZksynclite,
   isNova,
   isBSC,
-  isPolygon
+  isPolygon,
+  isArbNova
 };

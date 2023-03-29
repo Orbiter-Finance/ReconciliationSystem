@@ -9,12 +9,14 @@ const moment = require('moment')
 const constant = require('../constant/index')
 const isMaker = require("../utils/isMaker");
 const getScanUrl = require("../utils/getScanUrl");
-const { isZksynclite, isStarknet, isZk2 } = require("../utils/is");
+const { isZksynclite, isStarknet, isZk2, isArbNova } = require("../utils/is");
 const starknetTxModel = require("../model/starknetTx");
 const zksyncliteTxModel = require("../model/zksyncliteTx");
 const { BigNumber } = require("@ethersproject/bignumber");
 const BigNumberJs = require("bignumber.js");
 const axios = require('axios')
+const arbNovaScan = require('../utils/scanNova')
+
 
 async function startFetch() {
   const start = moment().add(-2, 'hour').format('YYYY-MM-DD HH:mm:ss');
@@ -156,7 +158,7 @@ const checkOtherTx = async function (makerTx) {
   }
   try {
     const res = await axios.get(url);
-    logger.info("url", url, makerTx.transcationId);
+    // logger.info("url", url, makerTx.transcationId);
     if (isZksynclite(makerTx)) {
       if (res.data.status === "success" && Array.isArray(res.data.result.list)) {
         const list = res.data.result.list.filter((item) => {
@@ -189,6 +191,21 @@ const checkOtherTx = async function (makerTx) {
   }
 };
 
+const checkArbNova = async function (makerTx) {
+  let list = []
+  try {
+    const txList = await arbNovaScan.scanNova(makerTx.replyAccount, 200);
+    txList.map(e => {
+      const amountValid = e.amount === makerTx.toAmount
+      if (amountValid) {
+        list.push(e)
+      }
+    })
+  } catch (error) {
+    logger.error('scan nova error:', error)
+  }
+  return list
+}
 async function startMatch2() {
   logger.info(`startMatch2`)
   const makerTxs = await makerTxModel.find({
@@ -197,13 +214,19 @@ async function startMatch2() {
   });
   let findNum = 0;
   logger.info(`startMatch2: makerTxs.length:${makerTxs.length}`)
-  await bluebird.map(makerTxs, async makerTx => {
-    const res = isStarknet(makerTx)
-    ? await checkStarknetTx(makerTx)
-    : isZk2(makerTx)
-    ? await checkZk2Tx(makerTx)
-    : await checkOtherTx(makerTx);
-    
+  await bluebird.map(makerTxs, async (makerTx, index) => {
+    let res = [];
+    if (isStarknet(makerTx)) {
+      res = await checkStarknetTx(makerTx)
+    } else if (isZk2(makerTx)) {
+      res = await checkZk2Tx(makerTx)
+    } else if (isArbNova(makerTx)) {
+      res = await checkArbNova(makerTx)
+      // console.log('----res', makerTx.transcationId ,makerTx.replyAccount, makerTx.toAmount, res.length)
+    } else {
+      res = await checkOtherTx(makerTx)
+    }
+
     if (res && res.length === 1) {
       const [data] = res;
       await makerTxModel.findOneAndUpdate(

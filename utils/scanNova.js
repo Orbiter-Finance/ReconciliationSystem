@@ -14,9 +14,11 @@ const genDataFromHtml  = function (html) {
     const length = span.length
     for (let i = 0; i < length; i++) {
         if (span[i].attribs['data-address-hash']) {
+            // the first `data-address-hash` is from
             if (!data.from) {
                 data.from = span[i].attribs['data-address-hash']
             } else {
+                // the second `data-address-hash` is to
                 data.to = span[i].attribs['data-address-hash']
             }
         }
@@ -57,7 +59,6 @@ async function scanNova (address, maxCount = 200) {
         }
     }
     const dataList = list.map(e => genDataFromHtml(e))
-    console.log(dataList)
     return dataList
 }
 // scanNova('0xFf600Eb9d9B6d72e744564ED2e13929B746Fa626')
