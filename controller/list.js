@@ -16,6 +16,10 @@ const mongoose = require('mongoose');
 const logger = require("../utils/logger");
 require('mongoose-long')(mongoose);
 const ethers = require('ethers')
+const checkFail = require('../job/checkFail')
+const axios = require('axios')
+const starknetTxModel = require("../model/starknetTx");
+const { BigNumber } = require("@ethersproject/bignumber");
 router.get("/newlist", async (ctx) => {
   let {
     current = 1,
@@ -323,4 +327,53 @@ router.get("/statistic", async (ctx) => {
     code: 0,
   };
 });
+
+
+router.get("/userTxList", async (ctx) => {
+  const result = {
+    code: 0,
+    data: [],
+  }
+  ctx.body = result
+  const { transactionId } = ctx.query;
+  console.log(ctx.query)
+  const failTx = await makerTx.findOne({ transcationId: transactionId  })
+  if (!failTx) {
+    return;
+  }
+  const failTxTime = new Date(failTx.inData.timestamp).getTime();
+  let list = [];
+  if (checkFail.isStarknet(failTx)) {
+    const matcheds = await starknetTxModel.find({
+      "input.6": BigNumber.from(failTx.replyAccount).toString(),
+      "timestamp": { $gte: parseInt(failTxTime / 1000) }
+    });
+    list = matcheds
+  } else {
+    const url = checkFail.getUrl(failTx);
+    const res = await axios.get(url);
+    if (checkFail.isZksynclite(failTx)) {
+      if (res.data.status === "success" && Array.isArray(res.data.result.list)) {
+        list = res.data.result.list.filter((item) => {
+          if (item.failReason !== null || item.op.type !== "Transfer") {
+            return false;
+          }
+          const timeValid = moment(new Date(item.createdAt)).isAfter(moment(new Date(failTxTime)))
+          return timeValid
+        });
+        // console.log('--list', list)
+      }
+    } else {
+      if (res.data.status === "1" && Array.isArray(res.data.result)) {
+        list = res.data.result.filter((item) => {
+          const timeValid = (Number(item.timeStamp) * 1000) >= failTxTime
+          item.createdAt = getFormatDate((Number(item.timeStamp) * 1000), 0)
+          return timeValid;
+        });
+      }
+    }
+  }
+  result.data = list
+})
+
 module.exports = router;

@@ -151,4 +151,7 @@ async function check() {
   await check();
 })();
 
-module.exports = check;
+module.exports.getUrl = getUrl;
+module.exports.isStarknet = isStarknet;
+module.exports.isZksynclite = isZksynclite;
+module.exports.check = check;
