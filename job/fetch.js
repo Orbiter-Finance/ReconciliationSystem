@@ -6,6 +6,7 @@ const fakerMakerTx = require('../model/fakerMakerTx')
 const utils = require('../utils')
 const logger = require('../utils/logger')
 const moment = require('moment')
+const constant = require('../constant/index')
 async function startFetch() {
   const start = moment().add(-2, 'hour').format('YYYY-MM-DD HH:mm:ss');
 
@@ -51,7 +52,11 @@ async function startFetch() {
 }
 
 async function startCheck() {
-  const docs = await makerTxModel.find({});
+  const docs = await makerTxModel.find({
+    status: { $eq: 'init' },
+    confirmStatus: constant.confirmStatus.noConfirm
+  });
+  logger.info(`check length:${docs.length}`)
   await bluebird.map(docs, async doc => {
     let id = doc.id;
     const value = String(doc.inData?.value);
