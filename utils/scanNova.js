@@ -2,7 +2,8 @@ const api = 'https://nova-explorer.arbitrum.io'
 const path = '/address/0xFf600Eb9d9B6d72e744564ED2e13929B746Fa626?type=JSON'
 const axios = require('axios')
 const cheerio = require('cheerio');
-
+const constant = require('../constant/index')
+const ethers = require('ethers');
 function getPath (address) {
     return `/address/${address}?type=JSON`
 }
@@ -35,6 +36,9 @@ const genDataFromHtml  = function (html) {
     let [ amount, symbol ] = amountSpan.text().replace(/\n/g,'').split(' ')
     data.amount = amount
     data.symbol = symbol;
+    if (constant.decimalMap[data.symbol]) {
+        data.amount = ethers.parseUnits(data.amount, constant.decimalMap[data.symbol]).toString()
+    }
     return data;
 }
 
