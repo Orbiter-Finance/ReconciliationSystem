@@ -22,7 +22,7 @@ const axios = require('axios')
 const starknetTxModel = require("../model/starknetTx");
 const { BigNumber } = require("@ethersproject/bignumber");
 const isMaker = require("../utils/isMaker");
-
+const zksyncliteTxModel = require("../model/zksyncliteTx");
 router.get("/newlist", async (ctx) => {
   let {
     current = 1,
@@ -186,6 +186,7 @@ router.get("/newlist", async (ctx) => {
       // }
       if (doc.inData?.timestamp) doc.inData.timestamp = getFormatDate(doc.inData.timestamp, 0);
       if (doc.inData?.createdAt) doc.inData.createdAt = getFormatDate(doc.inData.createdAt);
+
     },
     { concurrency: 10 }
   );
@@ -352,6 +353,10 @@ router.get("/userTxList", async (ctx) => {
       "timestamp": { $gte: parseInt(failTxTime / 1000) }
     });
     list = matcheds
+  } else if (is.isZk2(failTx)) {
+    list = await zksyncliteTxModel.find({
+      to: failTx.replyAccount.toLowerCase(),
+    });
   } else {
     const url = getUrl(failTx);
     const res = await axios.get(url);
