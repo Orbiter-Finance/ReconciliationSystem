@@ -37,8 +37,8 @@ router.post("/submit", async (ctx) => {
         ctx.body = { msg: 'Login has expired, please login again', code: 401, status: 401 };
         return;
     }
-    const { makerTxId, hash } = ctx.query;
-    const status = +ctx.query.status;
+    const { makerTxId, hash } = ctx.request.body;
+    const status = +ctx.request.body.status;
     const { uid, name, role } = ctx;
     if (!makerTxId) {
         ctx.body = { code: 1, msg: 'Parameter error' };
