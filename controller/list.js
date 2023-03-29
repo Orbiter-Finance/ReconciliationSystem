@@ -361,6 +361,11 @@ router.get("/userTxList", async (ctx) => {
     });
   } else {
     const url = getUrl(failTx);
+    if (!url) {
+      list = []
+      result.data = list
+      return
+    }
     const res = await axios.get(url);
     if (is.isZksynclite(failTx)) {
       if (res.data.status === "success" && Array.isArray(res.data.result.list)) {
