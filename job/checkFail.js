@@ -147,6 +147,7 @@ async function check() {
   }
 }
 
-(async function () {
-  await check();
-})();
+
+// (async function () {
+//   await check();
+// })();

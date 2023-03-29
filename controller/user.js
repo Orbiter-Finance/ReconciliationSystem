@@ -3,6 +3,7 @@ const Router = require("koa-router");
 const router = new Router();
 const user = require('../model/user');
 const makerTx = require('../model/failMakerTransaction');
+const remarkModel = require('../model/remark');
 const { encrypt, decrypt, md5 } = require('../utils/encrypt');
 
 // async function userMiddleware(ctx, next) {
@@ -18,7 +19,8 @@ const { encrypt, decrypt, md5 } = require('../utils/encrypt');
 // }
 
 async function checkLogin(ctx) {
-    const { token, baseInfo } = await decrypt(ctx.query.token);
+    const tokenStr = ctx.header['token'] || ctx.request.body.token || ctx.query.token
+    const { token, baseInfo } = await decrypt(tokenStr);
     if (token) {
         const info = JSON.parse(baseInfo);
         ctx.uid = info.id;
@@ -30,13 +32,13 @@ async function checkLogin(ctx) {
     }
 }
 
-router.get("/submit", async (ctx) => {
+router.post("/submit", async (ctx) => {
     if (!await checkLogin(ctx)) {
         ctx.body = { msg: 'Login has expired, please login again', code: 401, status: 401 };
         return;
     }
-    const { makerTxId, hash } = ctx.query;
-    const status = +ctx.query.status;
+    const { makerTxId, hash } = ctx.request.body;
+    const status = +ctx.request.body.status;
     const { uid, name, role } = ctx;
     if (!makerTxId) {
         ctx.body = { code: 1, msg: 'Parameter error' };
@@ -61,13 +63,43 @@ router.get("/submit", async (ctx) => {
     const userLog = { uid, name, hash, updateStatus: status, role, updateTime: new Date().valueOf() };
     await makerTx.updateOne({
         id: makerTxId,
-    }, { confirmStatus, userLog });
+    }, { $set: { confirmStatus, userLog } });
 
     ctx.body = { code: 0, msg: 'success' };
 });
 
-router.get("/login", async (ctx) => {
-    const { name, password } = ctx.query;
+
+router.post("/remarkSubmit", async (ctx) => {
+    if (!await checkLogin(ctx)) {
+        ctx.body = { msg: 'Login has expired, please login again', code: 401, status: 401 };
+        return;
+    }
+    const { transactionId, remark } = ctx.request.body;
+    const { name, role } = ctx;
+    if (!transactionId || !remark) {
+        ctx.body = { code: 1, msg: 'Parameter error' };
+        return;
+    }
+    const tx = await makerTx.findOne({
+        transcationId: transactionId
+    });
+    if(!tx){
+        ctx.body = { code: 1, msg: 'Transactions do not exist' };
+        return;
+    }
+    const remarkDoc = {
+        createdAt: new Date(),
+        transactionId,
+        role,
+        userName: name,
+        remark
+    }
+    const result = await remarkModel.create(remarkDoc)
+    ctx.body = { code: 0, data: result }
+});
+
+router.post("/login", async (ctx) => {
+    const { name, password } = ctx.request.body;
     const usr = await user.findOne({
         name,
         password: md5(password)
