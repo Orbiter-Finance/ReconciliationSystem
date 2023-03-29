@@ -22,6 +22,7 @@ const axios = require('axios')
 const starknetTxModel = require("../model/starknetTx");
 const { BigNumber } = require("@ethersproject/bignumber");
 const isMaker = require("../utils/isMaker");
+const remarkModel = require('../model/remark')
 const zksyncliteTxModel = require("../model/zksyncliteTx");
 router.get("/newlist", async (ctx) => {
   let {
@@ -186,7 +187,8 @@ router.get("/newlist", async (ctx) => {
       // }
       if (doc.inData?.timestamp) doc.inData.timestamp = getFormatDate(doc.inData.timestamp, 0);
       if (doc.inData?.createdAt) doc.inData.createdAt = getFormatDate(doc.inData.createdAt);
-
+      const list = await remarkModel.find({ transactionId: doc.transcationId }).sort({ createdAt: -1 }).lean();
+      doc.remarkList = list;
     },
     { concurrency: 10 }
   );
