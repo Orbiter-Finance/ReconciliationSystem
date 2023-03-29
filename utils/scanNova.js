@@ -59,7 +59,6 @@ async function scanNova (address, maxCount = 200) {
         }
     }
     const dataList = list.map(e => genDataFromHtml(e))
-    console.log(dataList)
     return dataList
 }
 // scanNova('0xFf600Eb9d9B6d72e744564ED2e13929B746Fa626')
