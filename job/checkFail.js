@@ -85,12 +85,12 @@ async function check() {
   const makerTxs = await makerTxModel.find({
     status: { $nin: ["matched", "warning"] },
     matchedScanTx: { $exists: false },
-    toChain: {
-      $in: ["4", "3", "14"],
+    // toChain: {
+      // $in: ["4", "3", "14"],
       // $in: ["3"],
       // $in: ["14"],
       // $in: ["4"],
-    },
+    // },
     // transcationId: "0xdf2a93ddf2c91f93f804fb5018547882e88476a10006eth39",
     // transcationId: "0xc87e30b9e0dc1d1fb177cebc41eee0d6bdcb650b0002eth0",
   });
@@ -150,8 +150,3 @@ async function check() {
 (async function () {
   await check();
 })();
-
-module.exports.getUrl = getUrl;
-module.exports.isStarknet = isStarknet;
-module.exports.isZksynclite = isZksynclite;
-module.exports.check = check;
