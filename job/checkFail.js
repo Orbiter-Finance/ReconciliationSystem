@@ -147,11 +147,10 @@ async function check() {
   }
 }
 
-(async function () {
-  await check();
-})();
+// (async function () {
+//   await check();
+// })();
 
-module.exports.getUrl = getUrl;
 module.exports.isStarknet = isStarknet;
 module.exports.isZksynclite = isZksynclite;
 module.exports.check = check;
