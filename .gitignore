@@ -7,3 +7,4 @@ src/test/
 src/logs/
 src/config/env.js
 package-lock.json
+env.js

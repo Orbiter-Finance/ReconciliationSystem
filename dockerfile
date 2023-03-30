@@ -9,7 +9,7 @@ WORKDIR /home/ReconciliationSystem
 RUN git checkout -b devlop origin/devlop
 RUN git pull
 # COPY ./src ./src
-COPY ./src/config/env.js ./src/config/env.js
+COPY ./env.js ./src/config/env.js
 COPY ./public ./public
 RUN yarn config set ignore-engines true
 RUN yarn global add pm2
