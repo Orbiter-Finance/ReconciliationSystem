@@ -55,6 +55,6 @@ initMongodb().then(() => {
         initUser();
     }
     app.listen(3000, () => {
-        console.log(`listening in 3000`);
+        console.log(`listening in 3000 port now`);
     });
 });
