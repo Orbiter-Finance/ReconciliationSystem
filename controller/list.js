@@ -263,10 +263,12 @@ router.get("/statistic", async (ctx) => {
   const successByMatchedWhere = { ...where, status: { $eq: "matched" } };
   const successByAdminCountWhere = {
     ...where,
+    // status: { $nin: ["matched", "warning"] },
     confirmStatus: { $eq: constant.confirmStatus.successByAdmin },
   };
   const failByAdminCountWhere = {
     ...where,
+    status: { $nin: ["matched", "warning"] },
     confirmStatus: { $eq: constant.confirmStatus.failByAdmin },
   };
   delete successByAdminCountWhere['inData.timestamp'] // ignore time
