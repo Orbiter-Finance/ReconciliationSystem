@@ -3,6 +3,6 @@ logs/
 .idea
 src/public/
 src/test/
-
+src/logs/
 src/config/env.js
 package-lock.json

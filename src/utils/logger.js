@@ -110,7 +110,7 @@ class LoggerService {
     }
 }
 
-const dir = path.join(__dirname, `../logs`);
+const dir = path.join(__dirname, `../../logs`);
 const logger = LoggerService.getLogger("logs", {
     dir,
 });
