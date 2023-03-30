@@ -1,8 +1,8 @@
 node_modules/
 logs/
 .idea
-public/
-test/
+src/public/
+src/test/
 
-config/env.js
+src/config/env.js
 package-lock.json
