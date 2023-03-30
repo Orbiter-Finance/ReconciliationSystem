@@ -19,11 +19,11 @@ const arbNovaScan = require('../utils/scanNova')
 
 
 async function startFetch() {
-  const start = moment().add(-2, 'hour').format('YYYY-MM-DD HH:mm:ss');
+  const start = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
 
   const sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND createdAt <= '${start}' AND createdAt >= '20230316'`
   let [list] = await pool.query(sql)
-  logger.info(`fetch length:`, list.length)
+  logger.info(`fetch sql ${sql}, length:`, list.length)
   try {
     await bluebird.map(list, async (item) => {
       try {
