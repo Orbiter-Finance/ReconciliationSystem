@@ -1,7 +1,7 @@
 # FROM alpine:latest 
 # RUN apk add --no-cache  --update nodejs npm yarn git
 
-FROM heguangda0921/apline-node-18:latest
+FROM heguangda0921/apline-node-18-v1:latest
 # RUN mkdir -p /home/ReconciliationSystem
 WORKDIR /home
 RUN git clone https://github.com/Orbiter-Finance/ReconciliationSystem.git
