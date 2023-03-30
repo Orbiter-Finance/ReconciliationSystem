@@ -75,6 +75,7 @@ router.get("/newlist", async (ctx) => {
       $eq: constant.confirmStatus.successByAdmin,
     };
   } else if (state === constant.state.failByAdmin) {
+    where.status = { $nin: ["matched", "warning"] };
     where.confirmStatus = {
       $eq: constant.confirmStatus.failByAdmin,
     };
