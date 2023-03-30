@@ -1,6 +1,7 @@
 node_modules/
 logs/
 .idea
+public/
 src/public/
 src/test/
 src/logs/
