@@ -8,8 +8,9 @@ RUN git clone https://github.com/Orbiter-Finance/ReconciliationSystem.git
 WORKDIR /home/ReconciliationSystem
 RUN git checkout -b devlop_ts origin/devlop_ts
 RUN git pull
+RUN npm -g ts-node
 # COPY ./src ./src
-COPY ./env.js ./src/config/env.js
+COPY ./env.ts ./src/config/env.ts
 COPY ./public ./public
 RUN yarn config set ignore-engines true
 RUN yarn global add pm2
