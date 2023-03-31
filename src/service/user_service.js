@@ -14,6 +14,9 @@ async function initUser() {
         if (!count) {
             await user.create({ name, password, role, status: 1 });
             console.log('Register user', name);
+        } else {
+            await user.findOneAndUpdate({ name }, { password, role, })
+            console.log('update user', name);
         }
     }
 }
