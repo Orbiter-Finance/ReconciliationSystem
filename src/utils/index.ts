@@ -1,7 +1,7 @@
-const { BigNumber } = require("bignumber.js");
-const moment = require("moment");
+import {BigNumber} from 'bignumber.js'
+import moment from 'moment'
 
-function isEqualsAddress(addressA, addressB) {
+export function isEqualsAddress(addressA, addressB) {
   try {
     if (addressA.toLowerCase() === addressB.toLowerCase()) {
       return true;
@@ -12,11 +12,9 @@ function isEqualsAddress(addressA, addressB) {
   }
 }
 
-function getFormatDate(date, timeZone = 8) {
+export function getFormatDate(date, timeZone = 8) {
   const timestamp = new Date(date || new Date().valueOf());
   // const timeZone = timeZone;
   return moment(timestamp).utcOffset(`${ timeZone < 0 ? "-" : "+" }${ Math.abs(timeZone) < 10 ? "0" + Math.abs(timeZone) : Math.abs(timeZone) }:00`).format("YYYY-MM-DD HH:mm:ss");
 }
 
-module.exports.isEqualsAddress = isEqualsAddress;
-module.exports.getFormatDate = getFormatDate;

@@ -23,4 +23,4 @@ let failMakerTransaction = new Schema({
     confirmStatus: { type: String, index: true, default: 'noConfirm' }, // noConfirm, successByAdmin,failByAdmin
 });
 
-module.exports = mongoose.model('failMakerTransaction', failMakerTransaction, 'failMakerTransaction');
+export default mongoose.model('failMakerTransaction', failMakerTransaction, 'failMakerTransaction');

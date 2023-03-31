@@ -1,5 +1,5 @@
-const winston = require("winston");
-require("winston-daily-rotate-file");
+import winston from 'winston'
+import "winston-daily-rotate-file";
 
 const { transports, format } = winston;
 const { label } = format;
@@ -27,9 +27,9 @@ const logLevels = {
 };
 winston.addColors(logLevels.colors);
 
-require("winston-daily-rotate-file");
-const moment = require("moment");
-const path = require("path");
+import 'winston-daily-rotate-file'
+import moment from 'moment'
+import path from 'path'
 
 class LoggerService {
     static services = {};
@@ -114,8 +114,16 @@ const dir = path.join(__dirname, `../../logs`);
 const logger = LoggerService.getLogger("logs", {
     dir,
 });
+function getFormatDate(date?) {
+    const timestamp = new Date(date || new Date().valueOf());
+    return moment(timestamp).utcOffset(getTimeZoneString(8)).format("YYYY-MM-DD HH:mm:ss");
+}
 
-module.exports = {
+function getTimeZoneString(timeZone) {
+    return `${ timeZone < 0 ? "-" : "+" }${ Math.abs(timeZone) < 10 ? "0" + Math.abs(timeZone) : Math.abs(timeZone) }:00`;
+}
+
+export default {
     info(...msg) {
         const message = msg.join(" ");
         console.log(`${ getFormatDate() } [INFO] \x1B[32m%s\x1b[39m`, message);
@@ -130,13 +138,5 @@ module.exports = {
         const message = msg.join(" ");
         console.log(`${ getFormatDate() } [INPUT]`, message);
     },
-};
-
-function getFormatDate(date) {
-    const timestamp = new Date(date || new Date().valueOf());
-    return moment(timestamp).utcOffset(getTimeZoneString(8)).format("YYYY-MM-DD HH:mm:ss");
 }
 
-function getTimeZoneString(timeZone) {
-    return `${ timeZone < 0 ? "-" : "+" }${ Math.abs(timeZone) < 10 ? "0" + Math.abs(timeZone) : Math.abs(timeZone) }:00`;
-}

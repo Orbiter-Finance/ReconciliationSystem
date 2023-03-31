@@ -1,11 +1,11 @@
-const { env } = require("../config");
-const Router = require("koa-router");
-const router = new Router();
-const user = require('../model/user');
-const makerTx = require('../model/failMakerTransaction');
-const remarkModel = require('../model/remark');
-const { encrypt, decrypt, md5 } = require('../utils/encrypt');
+
+import Router from 'koa-router'
+import user from '../model/user'
+import makerTx from '../model/failMakerTransaction'
+import remarkModel from '../model/remark'
+import { encrypt, decrypt, md5En } from '../utils/encrypt'
 const constant = require('../constant/index')
+const router = new Router();
 // async function userMiddleware(ctx, next) {
 //     const { token, baseInfo } = await decrypt(ctx?.req?.headers?.token);
 //     if (token) {
@@ -37,9 +37,10 @@ router.post("/submit", async (ctx) => {
         ctx.body = { msg: 'Login has expired, please login again', code: 401, status: 401 };
         return;
     }
-    const { makerTxId, hash } = ctx.request.body;
-    const status = +ctx.request.body.status;
-    const { uid, name, role } = ctx;
+    const body: any = ctx.request.body;
+    const { makerTxId, hash } = body;
+    const status = +body.status;
+    const { uid, name, role } = ctx as any;
     if (!makerTxId || ![0,1,2,3].includes(status)) {
         ctx.body = { code: 1, msg: 'Parameter error' };
         return;
@@ -76,8 +77,9 @@ router.post("/remarkSubmit", async (ctx) => {
         ctx.body = { msg: 'Login has expired, please login again', code: 401, status: 401 };
         return;
     }
-    const { transactionId, remark } = ctx.request.body;
-    const { name, role } = ctx;
+    const body: any = ctx.request.body
+    const { transactionId, remark } = body
+    const { name, role } = ctx as any;
     if (!transactionId || !remark) {
         ctx.body = { code: 1, msg: 'Parameter error' };
         return;
@@ -101,10 +103,11 @@ router.post("/remarkSubmit", async (ctx) => {
 });
 
 router.post("/login", async (ctx) => {
-    const { name, password } = ctx.request.body;
+    const body: any = ctx.request.body;
+    const { name, password } = body;
     const usr = await user.findOne({
         name,
-        password: md5(password)
+        password: md5En(password)
     });
     if (!usr) {
         ctx.body = { code: 1, msg: 'User name or password error' };
@@ -121,4 +124,4 @@ router.post("/login", async (ctx) => {
     ctx.body = { code: 0, msg: 'success', data: { token } };
 });
 
-module.exports = router;
+export default router;

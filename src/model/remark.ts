@@ -1,4 +1,4 @@
-let mongoose = require('mongoose');
+import mongoose from 'mongoose'
 
 let Schema = mongoose.Schema;
 
@@ -11,4 +11,4 @@ let remark = new Schema({
     updatedAt: Date,
 });
 
-module.exports = mongoose.model('remark', remark, 'remark');
+export default mongoose.model('remark', remark, 'remark');

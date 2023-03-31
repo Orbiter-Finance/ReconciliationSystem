@@ -1,15 +1,15 @@
-const Koa = require('koa');
-const initMongodb = require('./model/initMongodb')
-const { initUser } = require('./service/user_service')
-const bodyParser = require('koa-bodyparser');
+import Koa from 'koa'
+import { initMongodb } from './model/initMongodb'
+import { initUser } from './service/user_service'
+import bodyParser from 'koa-bodyparser'
+import router from './controller/list'
+import userRouter from './controller/user'
+import staticDir from 'koa-static'
+import { node_env } from './config/index' 
+import logger from './utils/logger'
+import * as fetch from './job/fetch'
 const app = new Koa();
-const router = require('./controller/list')
-const userRouter = require('./controller/user')
-const static = require('koa-static')
-const fetch = require('./job/fetch')
-const { env } = require("./config/index");
-const configEnv = require("./config/env");
-const logger = require('./utils/logger');
+
 
 app.use(async (ctx, next)=> {
     ctx.set('Access-Control-Allow-Origin', '*');
@@ -21,7 +21,7 @@ app.use(async (ctx, next)=> {
       await next();
     }
 });
-app.use(static('public'))
+app.use(staticDir('public'))
 app.use(bodyParser());
 
 app.use(async (ctx, next) => {
@@ -31,13 +31,13 @@ app.use(async (ctx, next) => {
         await next();
         const excTime = new Date().valueOf() - startTime;
         logger.input(`${ routerPath } ${ excTime }ms`);
-    } catch (e) {
+    } catch (e: any) {
         const status = e.status || 500;
         // The detailed error content of the server 500 error is not returned to the client because it may contain sensitive information
         logger.error(routerPath, e.message, e.stack);
         ctx.body = {
             code: 500,
-            msg: env.isProd ? "Server internal error" : e.message,
+            msg: node_env.isProd ? "Server internal error" : e.message,
         };
         if (status === 422) {
             ctx.body.detail = e.errors;
@@ -50,11 +50,12 @@ app.use(router.routes())
 app.use(userRouter.routes())
 
 initMongodb().then(() => {
-    if (env.isDev || env.isProd) {
+    logger.info('----', node_env.isDev, node_env.isProd)
+    if (node_env.isDev || node_env.isProd) {
         fetch.start();
         initUser();
     }
     app.listen(3000, () => {
-        console.log(`listening in 3000 port now`);
+        logger.info(`listening in 3000 port now`);
     });
 });

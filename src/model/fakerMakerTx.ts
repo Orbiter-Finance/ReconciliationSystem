@@ -1,4 +1,4 @@
-let mongoose = require('mongoose');
+import mongoose from 'mongoose'
 
 let Schema = mongoose.Schema;
 
@@ -14,4 +14,4 @@ let fakerMakerTx = new Schema({
     bind_status: String,
 });
 
-module.exports = mongoose.model('V1', fakerMakerTx, 'v1');
+export default mongoose.model('V1', fakerMakerTx, 'v1');

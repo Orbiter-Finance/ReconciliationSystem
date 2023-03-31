@@ -1,15 +1,15 @@
 const api = 'https://nova-explorer.arbitrum.io'
 const path = '/address/0xFf600Eb9d9B6d72e744564ED2e13929B746Fa626?type=JSON'
-const axios = require('axios')
-const cheerio = require('cheerio');
-const constant = require('../constant/index')
-const ethers = require('ethers');
+import axios from "axios";
+import { load } from 'cheerio'
+import * as constant from '../constant/index'
+import {ethers} from 'ethers'
 function getPath (address) {
     return `/address/${address}?type=JSON`
 }
 const genDataFromHtml  = function (html) {
-    let data = {}
-    let $ = cheerio.load(html);
+    let data:any = {}
+    let $ = load(html);
     let span = $('span')
     const length = span.length
     for (let i = 0; i < length; i++) {
@@ -73,4 +73,4 @@ async function scanNova (address, maxCount = 200, onlyIn = true) {
     return dataList
 }
 // scanNova('0x6652152db1aa4402f041a71bed216375a7704fb4')
-module.exports.scanNova = scanNova
+export default scanNova

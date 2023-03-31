@@ -1,28 +1,29 @@
-const Router = require("koa-router");
 
-const db = require("../model/index");
-const fakerMakerTx = require("../model/fakerMakerTx");
-const makerTx = require("../model/failMakerTransaction");
-const bluebird = require("bluebird");
-const _ = require("lodash");
-const moment = require("moment");
+import Router from 'koa-router'
+import fakerMakerTx from '../model/fakerMakerTx'
+import makerTx from '../model/failMakerTransaction'
+import bluebird from 'bluebird'
+import moment from 'moment'
+import dashbroddb from '../model/dashbroddb'
+import * as constant from '../constant/index'
+import { getFormatDate } from '../utils/index'
+import mongoose from 'mongoose'
+import logger from '../utils/logger'
+import mongooseLong from 'mongoose-long'
+mongooseLong(mongoose)
+import {ethers} from 'ethers'
+import getUrl from '../utils/getScanUrl'
+import * as is from '../utils/is'
+import axios from 'axios'
+import starknetTxModel from '../model/starknetTx'
+import { BigNumber } from '@ethersproject/bignumber'
+import isMaker from '../utils/isMaker'
+import remarkModel from '../model/remark'
+import zksyncliteTxModel from '../model/zksyncliteTx'
+import arbNovaScan from '../utils/scanNova'
+
+
 const router = new Router();
-const dashbroddb = require("../model/dashbroddb");
-const constant = require('../constant');
-const { getFormatDate } = require("../utils/index");
-const mongoose = require('mongoose');
-const logger = require("../utils/logger");
-require('mongoose-long')(mongoose);
-const ethers = require('ethers')
-const getUrl = require('../utils/getScanUrl')
-const is = require('../utils/is')
-const axios = require('axios')
-const starknetTxModel = require("../model/starknetTx");
-const { BigNumber } = require("@ethersproject/bignumber");
-const isMaker = require("../utils/isMaker");
-const remarkModel = require('../model/remark')
-const zksyncliteTxModel = require("../model/zksyncliteTx");
-const arbNovaScan = require('../utils/scanNova')
 
 router.get("/newlist", async (ctx) => {
   let {
@@ -32,7 +33,7 @@ router.get("/newlist", async (ctx) => {
     startTime: start,
     endTime: end,
     makerAddress,
-    state,
+    state = 0,
     transactionId,
     fromChainId,
     toChainId,
@@ -40,12 +41,15 @@ router.get("/newlist", async (ctx) => {
     maxAmount,
     symbol = 'ETH'
   } = ctx.query;
+  state = Number(state);
+  size = Number(size)
   current = Number(current);
+  symbol = String(symbol);
   if (!current || current <= 0) {
     current = 1;
   }
   const skip = (current - 1) * size;
-  const where = {};
+  const where: any = {};
   if (start && end) {
     where['inData.timestamp'] = {
       $gt: new Date(Number(start)),
@@ -53,7 +57,7 @@ router.get("/newlist", async (ctx) => {
     };
   }
   if (transactionId) {
-    if (/^\d+$/.test(transactionId)) {
+    if (/^\d+$/.test(String(transactionId))) {
       where.inId = { $eq: Number(transactionId) };
     } else {
       where.$or = [
@@ -63,7 +67,6 @@ router.get("/newlist", async (ctx) => {
       ]
     }
   }
-  state = Number(state);
   if (state === constant.state.successByMatched) {
     where.status = {
       $eq: "matched",
@@ -123,11 +126,11 @@ router.get("/newlist", async (ctx) => {
   if (constant.decimalMap[symbol] && (minAmount || maxAmount)) {
     where['inData.extra.toSymbol'] = { $eq: symbol }
     if (minAmount) {
-      minAmount = ethers.parseUnits(minAmount, constant.decimalMap[symbol]).toString()
+      minAmount = ethers.parseUnits(String(minAmount), constant.decimalMap[symbol]).toString()
       where.numberToAmount = { $gte: mongoose.Types.Long.fromString(minAmount) }
     } 
     if (maxAmount) {
-      maxAmount = ethers.parseUnits(maxAmount, constant.decimalMap[symbol]).toString()
+      maxAmount = ethers.parseUnits(String(maxAmount), constant.decimalMap[symbol]).toString()
       if (!minAmount) {
         where.numberToAmount = { $lte: mongoose.Types.Long.fromString(maxAmount) }
       } else {
@@ -168,7 +171,7 @@ router.get("/newlist", async (ctx) => {
   // const count = await makerTx.count(where);
   await bluebird.map(
     docs,
-    async (doc) => {
+    async (doc: any) => {
       // format state
 
       let state = constant.state.failByUnknown; // default fail
@@ -220,6 +223,8 @@ router.get("/notMatchMakerTxList", async (ctx) => {
     state,
     chain,
   } = ctx.query;
+  state = String(state)
+  size = Number(size)
   current = Number(current);
   if (!current || current <= 0) {
     current = 1;
@@ -230,11 +235,11 @@ router.get("/notMatchMakerTxList", async (ctx) => {
   if (["Error", "multi", "too_old"].includes(state)) {
     bind_status = [state];
   }
-  const where = { bind_status: { $in: bind_status } };
+  const where: any = { bind_status: { $in: bind_status } };
   if (makerAddress) {
     where.fake_maker_address = makerAddress;
   }
-  if (chain && constant.chainDesc.includes(chain)) {
+  if (chain && constant.chainDesc.includes(String(chain))) {
     where.tx_env = { $eq: chain };
   }
   const txList = await fakerMakerTx.find(where).sort({ timestamp: -1 }).skip(skip).limit(size).lean();
@@ -249,7 +254,7 @@ router.get("/statistic", async (ctx) => {
     fromChainId,
     toChainId
   } = ctx.query;
-  const where = {};
+  const where: any = {};
   if (start && end) {
     where['inData.timestamp'] = {
       $gt: new Date(Number(start)),
@@ -385,7 +390,7 @@ router.get("/userTxList", async (ctx) => {
   if (is.isStarknet(failTx)) {
     const matcheds = await starknetTxModel.find({
       "input.6": BigNumber.from(failTx.replyAccount).toString(),
-      "timestamp": { $gte: parseInt(failTxTime / 1000) }
+      "timestamp": { $gte: parseInt((failTxTime / 1000).toString()) }
     });
     list = matcheds
   } else if (is.isZk2(failTx)) {
@@ -393,7 +398,7 @@ router.get("/userTxList", async (ctx) => {
       to: failTx.replyAccount.toLowerCase(),
     });
   } else if (is.isArbNova(failTx)) {
-    list = await arbNovaScan.scanNova(failTx.replyAccount, 200);
+    list = await arbNovaScan(failTx.replyAccount, 200);
     list = list.filter(e => {
       return moment(new Date(e.createdAt)).isAfter(moment(new Date(failTxTime)))
     })
@@ -429,4 +434,4 @@ router.get("/userTxList", async (ctx) => {
   result.data = list
 })
 
-module.exports = router;
+export default router;

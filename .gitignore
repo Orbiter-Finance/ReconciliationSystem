@@ -8,4 +8,5 @@ src/logs/
 src/config/env.js
 package-lock.json
 env.js
+env.ts
 OrbterScanTxMatch

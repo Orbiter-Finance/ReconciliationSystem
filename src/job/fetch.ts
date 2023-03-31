@@ -1,34 +1,34 @@
-const pool = require('../model/dashbroddb')
-const makerTxModel = require('../model/failMakerTransaction')
-const bluebird = require('bluebird')
-const init = require('../model/initMongodb')
-const fakerMakerTx = require('../model/fakerMakerTx')
-const utils = require('../utils')
-const logger = require('../utils/logger')
-const moment = require('moment')
-const constant = require('../constant/index')
-const isMaker = require("../utils/isMaker");
-const getScanUrl = require("../utils/getScanUrl");
-const { isZksynclite, isStarknet, isZk2, isArbNova } = require("../utils/is");
-const starknetTxModel = require("../model/starknetTx");
-const zksyncliteTxModel = require("../model/zksyncliteTx");
-const { BigNumber } = require("@ethersproject/bignumber");
-const BigNumberJs = require("bignumber.js");
-const axios = require('axios')
-const arbNovaScan = require('../utils/scanNova')
+import pool from '../model/dashbroddb'
+import makerTxModel from '../model/failMakerTransaction'
+import bluebird from 'bluebird'
+import { initMongodb } from '../model/initMongodb'
+import fakerMakerTx from '../model/fakerMakerTx'
+import * as utils from '../utils'
+import logger from '../utils/logger'
+import moment from 'moment'
+import * as constant from '../constant/index'
+import isMaker from '../utils/isMaker'
+import getScanUrl from '../utils/getScanUrl'
+import { isZksynclite, isStarknet, isZk2, isArbNova } from '../utils/is'
+import starknetTxModel from '../model/starknetTx'
+import zksyncliteTxModel from '../model/zksyncliteTx'
+import { BigNumber } from '@ethersproject/bignumber'
+import BigNumberJs from 'bignumber.js'
+import axios from 'axios'
+import arbNovaScan from '../utils/scanNova'
 
 
 async function startFetch() {
   const start = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
 
   const sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND createdAt <= '${start}' AND createdAt >= '20230316'`
-  let [list] = await pool.query(sql)
+  let [list] : any = await pool.query(sql)
   logger.info(`fetch sql ${sql}, length:`, list.length)
   try {
-    await bluebird.map(list, async (item) => {
+    await bluebird.map(list, async (item: any) => {
       try {
         const checkSql = `SELECT * FROM transaction WHERE id = ${item.inId} `;
-        const [checkResult] = await pool.query(checkSql);
+        const [checkResult]: any = await pool.query(checkSql);
         if (!checkResult.length) {
           logger.info(`not found transaction: ${item.inId}`)
           return
@@ -68,7 +68,7 @@ async function startCheck() {
     confirmStatus: constant.confirmStatus.noConfirm
   });
   logger.info(`check length:${docs.length}`)
-  await bluebird.map(docs, async doc => {
+  await bluebird.map(docs, async (doc: any) => {
     let id = doc.id;
     const value = String(doc.inData?.value);
     if (doc.inData && doc.inData.value && !value.substring(value.length - 4).startsWith('90')) {
@@ -77,7 +77,7 @@ async function startCheck() {
       return
     }
     const sql = `SELECT * FROM maker_transaction mt LEFT JOIN transaction t on mt.inId= t.id WHERE mt.id = ${id} AND (outId IS NOT NULL OR t.status = 99 OR t.source='xvm')`
-    const [r] = await pool.query(sql);
+    const [r]: any = await pool.query(sql);
     if (r.length) {
       logger.info('delete---', doc.transcationId, r[0].status)
       await makerTxModel.findOneAndDelete({id: id});
@@ -88,7 +88,7 @@ async function startCheck() {
 async function startMatch() {
   let docs = await makerTxModel.find({ status: { $ne: 'matched' }})
   // logger.info('docs.length:',docs.length)
-  await bluebird.map(docs, async (doc) => {
+  await bluebird.map(docs, async (doc: any) => {
     const hits = await fakerMakerTx.find({amount: doc.toAmount});
     // logger.info('hits.length:', hits.length)
     if (!hits.length) {
@@ -194,7 +194,7 @@ const checkOtherTx = async function (makerTx) {
 const checkArbNova = async function (makerTx) {
   let list = []
   try {
-    const txList = await arbNovaScan.scanNova(makerTx.replyAccount, 200);
+    const txList = await arbNovaScan(makerTx.replyAccount, 200);
     txList.map(e => {
       const amountValid = e.amount === makerTx.toAmount
       if (amountValid) {
@@ -214,8 +214,8 @@ async function startMatch2() {
   });
   let findNum = 0;
   logger.info(`startMatch2: makerTxs.length:${makerTxs.length}`)
-  await bluebird.map(makerTxs, async (makerTx, index) => {
-    let res = [];
+  await bluebird.map(makerTxs, async (makerTx: any, index) => {
+    let res:any = [];
     if (isStarknet(makerTx)) {
       res = await checkStarknetTx(makerTx)
     } else if (isZk2(makerTx)) {
@@ -264,11 +264,11 @@ async function startMatch2() {
 }
 
 
-async function start() {
-  // await init()
+export async function start() {
+  // await initMongodb()
   let fetching = false
-  let checking = false
-  let matching = false
+  let checking = true
+  let matching = true
   setInterval(() => {
     if (fetching) {
       logger.info('fetching')
@@ -303,4 +303,3 @@ async function start() {
   }, 30 * 1000)
 }
 // start()
-module.exports.start = start
