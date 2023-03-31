@@ -267,8 +267,8 @@ async function startMatch2() {
 export async function start() {
   // await initMongodb()
   let fetching = false
-  let checking = true
-  let matching = true
+  let checking = false
+  let matching = false
   setInterval(() => {
     if (fetching) {
       logger.info('fetching')
