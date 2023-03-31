@@ -1,6 +1,7 @@
 import env from '../config/env'
 import user from '../model/user'
 import { md5En } from '../utils/encrypt'
+import logger from '../utils/logger';
 
 export async function initUser() {
     let configEnv: any = env;
@@ -14,7 +15,10 @@ export async function initUser() {
         });
         if (!count) {
             await user.create({ name, password, role, status: 1 });
-            console.log('Register user', name);
+            logger.info('Register user', name);
+        } else {
+            await user.findOneAndUpdate({ name }, { password, role })
+            logger.info('Update user', name);
         }
     }
 }
