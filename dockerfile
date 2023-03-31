@@ -8,7 +8,7 @@ RUN git clone https://github.com/Orbiter-Finance/ReconciliationSystem.git
 WORKDIR /home/ReconciliationSystem
 RUN git checkout -b devlop_ts origin/devlop_ts
 RUN git pull
-RUN npm -g ts-node
+RUN npm install -g ts-node
 # COPY ./src ./src
 COPY ./env.ts ./src/config/env.ts
 COPY ./public ./public
