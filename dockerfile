@@ -6,7 +6,7 @@ FROM heguangda0921/apline-node-18-v1:latest
 WORKDIR /home
 RUN git clone https://github.com/Orbiter-Finance/ReconciliationSystem.git
 WORKDIR /home/ReconciliationSystem
-RUN git checkout -b devlop_ts origin/devlop_ts
+RUN git checkout -b devlop origin/devlop
 RUN git pull
 RUN npm install -g ts-node
 # COPY ./src ./src
