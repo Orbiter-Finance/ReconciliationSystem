@@ -1,7 +1,7 @@
 const configEnv = require("../config/env");
 const user = require('../model/user');
 const { md5 } = require('../utils/encrypt');
-
+const logger = require('../utils/logger')
 async function initUser() {
     const accountList = configEnv?.account || [];
     for (const account of accountList) {
@@ -13,11 +13,10 @@ async function initUser() {
         });
         if (!count) {
             await user.create({ name, password, role, status: 1 });
-            console.log('Register user', name);
+            logger.info('Register user', name);
         } else {
-            console.log('updating user', name);
             await user.findOneAndUpdate({ name }, { password, role, })
-            console.log('update user', name);
+            logger.info('update user', name);
         }
     }
 }
