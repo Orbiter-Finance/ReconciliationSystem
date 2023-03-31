@@ -117,6 +117,9 @@ router.get("/newlist", async (ctx) => {
   if (fromChainId) {
     where.fromChain = { $eq: fromChainId }
   }
+  if (symbol) {
+    where['inData.extra.toSymbol'] = { $eq: symbol }
+  }
   if (constant.decimalMap[symbol] && (minAmount || maxAmount)) {
     where['inData.extra.toSymbol'] = { $eq: symbol }
     if (minAmount) {
