@@ -6,7 +6,7 @@ FROM heguangda0921/apline-node-18-v1:latest
 WORKDIR /home
 RUN git clone https://github.com/Orbiter-Finance/ReconciliationSystem.git
 WORKDIR /home/ReconciliationSystem
-RUN git checkout -b devlop origin/devlop
+RUN git checkout -b devlop_ts origin/devlop_ts
 RUN git pull
 # COPY ./src ./src
 COPY ./env.js ./src/config/env.js
@@ -16,4 +16,4 @@ RUN yarn global add pm2
 RUN yarn --network-timeout 600000
 # RUN run build
 EXPOSE 3000
-CMD ["pm2-runtime","./src/app.js"]
+CMD ["ts-node","./src/app.ts"]
