@@ -34,12 +34,12 @@ async function startFetch() {
           return
         }
         if (checkResult[0].source === 'xvm') {
-          // logger.info(`checkResult source error, inId:${item.inId}, source: ${checkResult[0].source}`)
+          logger.info(`checkResult source error tranId:${item.transcationId}, inId:${item.inId}, source: ${checkResult[0].source}`)
           return
         }
         const value = String(checkResult[0].value);
         if (!value.substring(value.length - 4).startsWith('90')) {
-          // logger.info(`checkResult source value error, inId:${item.inId}, value: ${value}`)
+          logger.info(`checkResult source value error,tranId:${item.transcationId}, inId:${item.inId}, value: ${value}`)
           return
         }
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
