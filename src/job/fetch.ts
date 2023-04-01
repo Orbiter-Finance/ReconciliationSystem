@@ -40,7 +40,7 @@ async function startFetch() {
         const value = String(checkResult[0].value);
         if (!value.substring(value.length - 4).startsWith('90')) {
           logger.info(`checkResult source value error,tranId:${item.transcationId}, inId:${item.inId}, value: ${value}`)
-          return
+          // return
         }
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
         const findOne = await makerTxModel.findOne({ id: Number(newItem.id) });
@@ -71,11 +71,11 @@ async function startCheck() {
   await bluebird.map(docs, async (doc: any) => {
     let id = doc.id;
     const value = String(doc.inData?.value);
-    if (doc.inData && doc.inData.value && !value.substring(value.length - 4).startsWith('90')) {
-      logger.info(`delete by value: ${value}, transcationId: ${doc.transcationId}`,)
-      await makerTxModel.findOneAndDelete({id: id});
-      return
-    }
+    // if (doc.inData && doc.inData.value && !value.substring(value.length - 4).startsWith('90')) {
+    //   logger.info(`delete by value: ${value}, transcationId: ${doc.transcationId}`,)
+    //   await makerTxModel.findOneAndDelete({id: id});
+    //   return
+    // }
     const sql = `SELECT * FROM maker_transaction mt LEFT JOIN transaction t on mt.inId= t.id WHERE mt.id = ${id} AND (outId IS NOT NULL OR t.status = 99 OR t.source='xvm')`
     const [r]: any = await pool.query(sql);
     if (r.length) {
