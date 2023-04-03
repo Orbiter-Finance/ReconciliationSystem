@@ -11,7 +11,7 @@ import mongoose from 'mongoose'
 import logger from '../utils/logger'
 import mongooseLong from 'mongoose-long'
 mongooseLong(mongoose)
-import ethers from 'ethers'
+import {ethers} from 'ethers'
 import getUrl from '../utils/getScanUrl'
 import * as is from '../utils/is'
 import axios from 'axios'
@@ -352,6 +352,7 @@ router.get("/statistic", async (ctx) => {
         $addFields: { "count": { $convert: { input: "$count2", "to":"string", "onError": 0 } } }
     }
   ])
+  console.log(ethers)
   const pendingPay = {}
   if (result.length) {
     result.map(e => {

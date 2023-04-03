@@ -3,7 +3,7 @@ const path = '/address/0xFf600Eb9d9B6d72e744564ED2e13929B746Fa626?type=JSON'
 import axios from "axios";
 import { load } from 'cheerio'
 import * as constant from '../constant/index'
-import ethers from 'ethers'
+import {ethers} from 'ethers'
 function getPath (address) {
     return `/address/${address}?type=JSON`
 }
