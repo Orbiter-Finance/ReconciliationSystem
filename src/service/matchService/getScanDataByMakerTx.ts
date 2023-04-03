@@ -64,11 +64,12 @@ export async function getScanDataByMakerTx(
   } else {
     list = await getScanTxs(replyAccount, toChain)
   }
-  
-  list = list.filter(item => {
-    const timeValid = (Number(item.timeStamp) * 1000) >= startTime
-    item.createdAt = getFormatDate((Number(item.timeStamp) * 1000), 0)
-    return timeValid && isMaker(item.from)
-  })
-  return list
+  if (list && list.length) {
+    list = list.filter(item => {
+      const timeValid = (Number(item.timeStamp) * 1000) >= startTime
+      item.createdAt = getFormatDate((Number(item.timeStamp) * 1000), 0)
+      return timeValid && isMaker(item.from)
+    })
+  }
+  return list || []
 }
