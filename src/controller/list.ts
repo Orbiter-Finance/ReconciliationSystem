@@ -11,7 +11,7 @@ import mongoose from 'mongoose'
 import logger from '../utils/logger'
 import mongooseLong from 'mongoose-long'
 mongooseLong(mongoose)
-import {ethers} from 'ethers'
+import ethers from 'ethers'
 import getUrl from '../utils/getScanUrl'
 import * as is from '../utils/is'
 import axios from 'axios'
@@ -19,9 +19,9 @@ import starknetTxModel from '../model/starknetTx'
 import { BigNumber } from '@ethersproject/bignumber'
 import isMaker from '../utils/isMaker'
 import remarkModel from '../model/remark'
-import zksyncliteTxModel from '../model/zksyncliteTx'
+import zksyncliteTxModel from '../model/zksynceraTx'
 import arbNovaScan from '../utils/scanNova'
-
+import { getScanDataByMakerTx } from '../service/matchService/getScanDataByMakerTx'
 
 const router = new Router();
 
@@ -126,11 +126,11 @@ router.get("/newlist", async (ctx) => {
   if (constant.decimalMap[symbol] && (minAmount || maxAmount)) {
     where['inData.extra.toSymbol'] = { $eq: symbol }
     if (minAmount) {
-      minAmount = ethers.parseUnits(String(minAmount), constant.decimalMap[symbol]).toString()
+      minAmount = ethers.utils.parseUnits(String(minAmount), constant.decimalMap[symbol]).toString()
       where.numberToAmount = { $gte: mongoose.Types.Long.fromString(minAmount) }
     } 
     if (maxAmount) {
-      maxAmount = ethers.parseUnits(String(maxAmount), constant.decimalMap[symbol]).toString()
+      maxAmount = ethers.utils.parseUnits(String(maxAmount), constant.decimalMap[symbol]).toString()
       if (!minAmount) {
         where.numberToAmount = { $lte: mongoose.Types.Long.fromString(maxAmount) }
       } else {
@@ -355,7 +355,7 @@ router.get("/statistic", async (ctx) => {
   const pendingPay = {}
   if (result.length) {
     result.map(e => {
-      pendingPay[e._id] = ethers.formatUnits(parseFloat(e.count).toString(), constant.decimalMap[e._id] || 18)
+      pendingPay[e._id] = ethers.utils.formatUnits(parseFloat(e.count).toString(), constant.decimalMap[e._id] || 18)
     })
   }
   ctx.body = {
@@ -386,52 +386,9 @@ router.get("/userTxList", async (ctx) => {
     return;
   }
   const failTxTime = new Date(failTx.inData.timestamp).getTime();
-  let list = [];
-  if (is.isStarknet(failTx)) {
-    const matcheds = await starknetTxModel.find({
-      "input.6": BigNumber.from(failTx.replyAccount).toString(),
-      "timestamp": { $gte: parseInt((failTxTime / 1000).toString()) }
-    });
-    list = matcheds
-  } else if (is.isZk2(failTx)) {
-    list = await zksyncliteTxModel.find({
-      to: failTx.replyAccount.toLowerCase(),
-    });
-  } else if (is.isArbNova(failTx)) {
-    list = await arbNovaScan(failTx.replyAccount, 200);
-    list = list.filter(e => {
-      return moment(new Date(e.createdAt)).isAfter(moment(new Date(failTxTime)))
-    })
-  } else {
-    const url = getUrl(failTx);
-    if (!url) {
-      list = []
-      result.data = list
-      return
-    }
-    const res = await axios.get(url);
-    if (is.isZksynclite(failTx)) {
-      if (res.data.status === "success" && Array.isArray(res.data.result.list)) {
-        list = res.data.result.list.filter((item) => {
-          if (item.failReason !== null || item.op.type !== "Transfer") {
-            return false;
-          }
-          const timeValid = moment(new Date(item.createdAt)).isAfter(moment(new Date(failTxTime)))
-          return timeValid && isMaker(item.op.from)
-        });
-
-      }
-    } else {
-      if (res.data.status === "1" && Array.isArray(res.data.result)) {
-        list = res.data.result.filter((item) => {
-          const timeValid = (Number(item.timeStamp) * 1000) >= failTxTime
-          item.createdAt = getFormatDate((Number(item.timeStamp) * 1000), 0)
-          return timeValid && isMaker(item.from);
-        });
-      }
-    }
-  }
-  result.data = list
+  let flist = await getScanDataByMakerTx(failTx, failTxTime)
+  result.data = flist
+  return
 })
 
 export default router;

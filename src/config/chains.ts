@@ -5,6 +5,8 @@ export enum Chains {
   Starknet = '4',
   Polygon = '6',
   Optimism = '7',
+  Immutablex = '8',
+  Zkspace = '12',
   Boba = '13',
   ZkSyncera = '14',
   BSC = '15',

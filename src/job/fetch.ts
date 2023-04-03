@@ -9,14 +9,14 @@ import moment from 'moment'
 import * as constant from '../constant/index'
 import isMaker from '../utils/isMaker'
 import getScanUrl from '../utils/getScanUrl'
-import { isZksynclite, isStarknet, isZk2, isArbNova } from '../utils/is'
+import { isZksynclite, isStarknet, isZkSyncera, isArbNova } from '../utils/is'
 import starknetTxModel from '../model/starknetTx'
-import zksyncliteTxModel from '../model/zksyncliteTx'
+import zksyncliteTxModel from '../model/zksynceraTx'
 import { BigNumber } from '@ethersproject/bignumber'
 import BigNumberJs from 'bignumber.js'
 import axios from 'axios'
 import arbNovaScan from '../utils/scanNova'
-
+import { getMatchedTxByMakerTx } from '../service/matchService/getMatchedTxByMakerTx'
 const REG = new RegExp(/^(?:\d*90..|.*?90..(?:0{0,10}|$))$/)
 
 async function startFetch() {
@@ -226,27 +226,27 @@ async function startMatch2() {
   let findNum = 0;
   logger.info(`startMatch2: makerTxs.length:${makerTxs.length}`)
   await bluebird.map(makerTxs, async (makerTx: any, index) => {
-    let res:any = [];
-    if (isStarknet(makerTx)) {
-      res = await checkStarknetTx(makerTx)
-    } else if (isZk2(makerTx)) {
-      res = await checkZk2Tx(makerTx)
-    } else if (isArbNova(makerTx)) {
-      res = await checkArbNova(makerTx)
-      // console.log('----res', makerTx.transcationId ,makerTx.replyAccount, makerTx.toAmount, res.length)
-    } else {
-      res = await checkOtherTx(makerTx)
-    }
-
+    // let res:any = [];
+    // if (isStarknet(makerTx)) {
+    //   res = await checkStarknetTx(makerTx)
+    // } else if (isZkSyncera(makerTx)) {
+    //   res = await checkZk2Tx(makerTx)
+    // } else if (isArbNova(makerTx)) {
+    //   res = await checkArbNova(makerTx)
+    //   // console.log('----res', makerTx.transcationId ,makerTx.replyAccount, makerTx.toAmount, res.length)
+    // } else {
+    //   res = await checkOtherTx(makerTx)
+    // }
+    let res = await getMatchedTxByMakerTx(makerTx)
     if (res && res.length === 1) {
-      const [data] = res;
+      const [data]: any = res;
       await makerTxModel.findOneAndUpdate(
         { id: makerTx.id },
         {
           $set: {
             matchedScanTx: {
               ...data,
-              hash: data.hash ? data.hash : data._id,
+              hash: data.hash ? data.hash : data.tx_hash ? data.txHash : data._id,
             },
             status: "matched",
           },

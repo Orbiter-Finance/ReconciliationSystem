@@ -3,7 +3,7 @@ const path = '/address/0xFf600Eb9d9B6d72e744564ED2e13929B746Fa626?type=JSON'
 import axios from "axios";
 import { load } from 'cheerio'
 import * as constant from '../constant/index'
-import {ethers} from 'ethers'
+import ethers from 'ethers'
 function getPath (address) {
     return `/address/${address}?type=JSON`
 }
@@ -39,7 +39,7 @@ const genDataFromHtml  = function (html) {
     data.amount = amount
     data.symbol = symbol;
     if (constant.decimalMap[data.symbol]) {
-        data.amount = ethers.parseUnits(data.amount, constant.decimalMap[data.symbol]).toString()
+        data.amount = ethers.utils.parseUnits(data.amount, constant.decimalMap[data.symbol]).toString()
     }
     const inOrOutSpan = $('.tile-badge')
     data.size = inOrOutSpan.text().trim()

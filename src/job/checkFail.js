@@ -1,6 +1,6 @@
 const makerTxModel = require("../model/failMakerTransaction");
 const starknetTxModel = require("../model/starknetTx");
-const zksyncliteTxModel = require("../model/zksyncliteTx");
+const zksyncliteTxModel = require("../model/zksynceraTx");
 
 const { BigNumber } = require("@ethersproject/bignumber");
 const BigNumberJs = require("bignumber.js");
