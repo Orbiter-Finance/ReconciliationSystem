@@ -17,16 +17,21 @@ import BigNumberJs from 'bignumber.js'
 import axios from 'axios'
 import arbNovaScan from '../utils/scanNova'
 
+const REG = new RegExp(/^(?:\d*90..|.*?90..(?:0{0,10}|$))$/)
 
 async function startFetch() {
   const start = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
 
-  const sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND createdAt <= '${start}' AND createdAt >= '20230316'`
+  const sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND toAmount != 'null'   AND createdAt <= '${start}' AND createdAt >= '20230316'`
   let [list] : any = await pool.query(sql)
   logger.info(`fetch sql ${sql}, length:`, list.length)
   try {
     await bluebird.map(list, async (item: any) => {
       try {
+        if (!/^\d+$/.test(item.toAmount)) {
+          logger.info(`toAmount error, tranId:${item.transcationId}, toAmount: ${item.toAmount}`)
+          return
+        }
         const checkSql = `SELECT * FROM transaction WHERE id = ${item.inId} `;
         const [checkResult]: any = await pool.query(checkSql);
         if (!checkResult.length) {
@@ -38,9 +43,10 @@ async function startFetch() {
           return
         }
         const value = String(checkResult[0].value);
-        if (!value.substring(value.length - 4).startsWith('90')) {
+        if (!REG.test(value))
+        {
           logger.info(`checkResult source value error,tranId:${item.transcationId}, inId:${item.inId}, value: ${value}`)
-          // return
+          return
         }
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
         const findOne = await makerTxModel.findOne({ id: Number(newItem.id) });
@@ -71,11 +77,16 @@ async function startCheck() {
   await bluebird.map(docs, async (doc: any) => {
     let id = doc.id;
     const value = String(doc.inData?.value);
-    // if (doc.inData && doc.inData.value && !value.substring(value.length - 4).startsWith('90')) {
-    //   logger.info(`delete by value: ${value}, transcationId: ${doc.transcationId}`,)
-    //   await makerTxModel.findOneAndDelete({id: id});
-    //   return
-    // }
+    if ((doc.inData && doc.inData.value && !REG.test(doc.inData.value))) {
+      logger.info(`delete by value, value: ${value}, transcationId: ${doc.transcationId}`,)
+      await makerTxModel.findOneAndDelete({id: id});
+      return
+    }
+    if (!/^\d+$/.test(doc.toAmount)) {
+      logger.info(`delete by toAmount: ${doc.toAmount}, transcationId: ${doc.transcationId}`,)
+      await makerTxModel.findOneAndDelete({id: id});
+      return
+    }
     const sql = `SELECT * FROM maker_transaction mt LEFT JOIN transaction t on mt.inId= t.id WHERE mt.id = ${id} AND (outId IS NOT NULL OR t.status = 99 OR t.source='xvm')`
     const [r]: any = await pool.query(sql);
     if (r.length) {
