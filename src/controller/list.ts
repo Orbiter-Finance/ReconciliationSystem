@@ -139,7 +139,7 @@ router.get("/newlist", async (ctx) => {
     }
   }
 
-  console.log(JSON.stringify(where), minAmount, maxAmount);
+  logger.info(JSON.stringify(where));
   const aggregate = [
     {
       "$addFields": { "numberToAmount": { $convert: { input: "$toAmount", "to":"long", "onError": 0 } } }
@@ -352,7 +352,6 @@ router.get("/statistic", async (ctx) => {
         $addFields: { "count": { $convert: { input: "$count2", "to":"string", "onError": 0 } } }
     }
   ])
-  console.log(ethers)
   const pendingPay = {}
   if (result.length) {
     result.map(e => {
@@ -381,7 +380,6 @@ router.get("/userTxList", async (ctx) => {
   }
   ctx.body = result
   const { transactionId } = ctx.query;
-  console.log(ctx.query)
   const failTx = await makerTx.findOne({ transcationId: transactionId  })
   if (!failTx) {
     return;

@@ -25,16 +25,16 @@ app.use(staticDir('public'))
 app.use(bodyParser());
 
 app.use(async (ctx, next) => {
-    const routerPath = ctx.originalUrl.split("?")[0];
+    // const routerPath = ctx.originalUrl.split("?")[0];
     try {
         const startTime = new Date().valueOf();
         await next();
         const excTime = new Date().valueOf() - startTime;
-        logger.info(`${ routerPath } ${ excTime }ms`);
+        logger.info(`${ ctx.originalUrl } ${ excTime }ms`);
     } catch (e: any) {
         const status = e.status || 500;
         // The detailed error content of the server 500 error is not returned to the client because it may contain sensitive information
-        logger.error(routerPath, e.message, e.stack);
+        logger.error(ctx.originalUrl, e.message, e.stack);
         ctx.body = {
             code: 500,
             msg: node_env.isProd ? "Server internal error" : e.message,
