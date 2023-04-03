@@ -30,5 +30,9 @@ export function getTokenTxListURL(
 ): string | undefined {
   const { url, key } = getScanUrlAndAPIKey(chain)
 
+  if (!url || !key) {
+    return undefined
+  }
+  
   return `${url}?module=account&action=tokentx&contractaddress=${tokenAddress}&address=${userAddress}&page=1&offset=${offset}&startblock=0&endblock=${endblock}&sort=desc&apikey=${key}`
 }
