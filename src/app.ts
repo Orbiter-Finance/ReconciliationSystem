@@ -30,7 +30,7 @@ app.use(async (ctx, next) => {
         const startTime = new Date().valueOf();
         await next();
         const excTime = new Date().valueOf() - startTime;
-        logger.input(`${ routerPath } ${ excTime }ms`);
+        logger.info(`${ routerPath } ${ excTime }ms`);
     } catch (e: any) {
         const status = e.status || 500;
         // The detailed error content of the server 500 error is not returned to the client because it may contain sensitive information
