@@ -23,9 +23,9 @@ async function startFetch() {
   const start = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
   const maxIdDoc = await makerTxModel.find({}).sort({ id: -1 }).limit(1);
   let sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND toAmount != 'null' AND toAmount != 'undefined' AND createdAt <= '${start}' AND createdAt >= '20230316'`
-  if (maxIdDoc && maxIdDoc.length) {
-    sql = `${sql} AND id > ${maxIdDoc[0].id}`
-  }
+  // if (maxIdDoc && maxIdDoc.length) {
+  //   sql = `${sql} AND id > ${maxIdDoc[0].id}`
+  // }
   let [list] : any = await pool.query(sql)
   logger.info(`fetch sql ${sql}, length:`, list.length)
   try {
