@@ -1,7 +1,7 @@
 import { ZK_SYNCLITE_SCAN_URL } from '../../../config/scan'
 import { ZkSyncliteTx } from '../../../constant/tx.types'
 import axios from 'axios'
-
+import logger from '../../../utils/logger'
 export default async function getZkSyncliteTxs(userAddress: string): Promise<ZkSyncliteTx[] | undefined> {
   const url = `${ZK_SYNCLITE_SCAN_URL}/v0.2/accounts/${userAddress}/transactions?from=latest&limit=100&direction=older`
 
@@ -20,7 +20,7 @@ export default async function getZkSyncliteTxs(userAddress: string): Promise<ZkS
       })
     }
   } catch (error) {
-    console.log('getZkSyncliteTxs error:', error)
+    logger.error('getZkSyncliteTxs error:', error)
   }
 
   return undefined

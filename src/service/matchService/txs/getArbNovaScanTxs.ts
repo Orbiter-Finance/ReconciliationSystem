@@ -4,7 +4,7 @@ import { NOVA_SCAN_URL } from '../../../config/scan'
 import { DecimalMap } from '../../../config/tokens'
 import { ArbNovaTx } from '../../../constant/tx.types'
 import axios from 'axios'
-
+import logger from '../../../utils/logger'
 function getPath(address: string) {
   return `/address/${address}?type=JSON`
 }
@@ -79,7 +79,7 @@ export default async function getArbNovaScanTxs(address: string, maxCount = 200,
       page++
     }
   } catch (error: any) {
-    console.log('getArbNovaScanTx Error:', error)
+    logger.error('getArbNovaScanTx Error:', error)
   }
   return dataList
 }

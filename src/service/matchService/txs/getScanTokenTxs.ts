@@ -2,7 +2,7 @@ import { Chains } from '../../../config/chains'
 import { ScanTokenTx } from '../../../constant/tx.types'
 import axios from 'axios'
 import { getTokenTxListURL } from '../../../utils/scan'
-
+import logger from '../../../utils/logger'
 export default async function getScanTokenTxs(
   address: string,
   token: string,
@@ -21,7 +21,7 @@ export default async function getScanTokenTxs(
       return res.data.result
     }
   } catch (error) {
-    console.log('getScanTokenTxs error:', error)
+    logger.error('getScanTokenTxs error:', error)
   }
 
   return undefined

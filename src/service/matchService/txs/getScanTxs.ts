@@ -2,7 +2,7 @@ import { Chains } from '../../../config/chains'
 import { ScanTx } from '../../../constant/tx.types'
 import axios from 'axios'
 import { getScanTxListURL } from '../../../utils/scan'
-
+import logger from '../../../utils/logger'
 export default async function getScanTxs(address: string, chain: Chains): Promise<ScanTx[] | undefined> {
   const url = getScanTxListURL(chain, address, {})
 
@@ -17,7 +17,7 @@ export default async function getScanTxs(address: string, chain: Chains): Promis
       return res.data.result
     }
   } catch (error) {
-    console.log('getScanTxs error:', error)
+    logger.error('getScanTxs error:', error)
   }
 
   return undefined

@@ -291,7 +291,9 @@ export async function start() {
     fetching = true
     let start = moment().format('YYYY-MM-DD HH:mm:ss');
     logger.info(`start fetching at at ${moment().format('YYYY-MM-DD HH:mm:ss')}`)
-    startFetch().finally(() => { fetching = false;logger.info(`end fetch: start:${start} end:${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
+    startFetch()
+    .catch(error => logger.error('fetching error:',error))
+    .finally(() => { fetching = false;logger.info(`end fetch: start:${start} end:${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
   }, 30 * 1000)
 
   setInterval(() => {
@@ -302,7 +304,9 @@ export async function start() {
     let start = moment().format('YYYY-MM-DD HH:mm:ss');
     logger.info(`start checking at ${start}`)
     checking = true
-    startCheck().finally(() => { checking = false;logger.info(`end check start:${start} end:${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
+    startCheck()
+    .catch(error => logger.error('checking error:',error))
+    .finally(() => { checking = false;logger.info(`end check start:${start} end:${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
   }, 30 * 1000)
 
   setInterval(() => {
@@ -313,7 +317,9 @@ export async function start() {
     let start = moment().format('YYYY-MM-DD HH:mm:ss');
     logger.info(`start matching at ${start}`)
     matching = true
-    startMatch2().finally(() => { matching = false;logger.info(`end match start:${start} end: ${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
+    startMatch2()
+    .catch(error => logger.error('matching error:',error))
+    .finally(() => { matching = false;logger.info(`end match start:${start} end: ${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
   }, 30 * 1000)
 }
 // start()
