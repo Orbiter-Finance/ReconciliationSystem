@@ -55,7 +55,7 @@ async function startFetch() {
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
         const findOne = await makerTxModel.findOne({ id: Number(newItem.id) });
         if (findOne) {
-          // logger.info('update one', newItem.id)
+          logger.info('update one', newItem.transcationId)
           newItem.inData = checkResult[0];
           await makerTxModel.findOneAndUpdate({ id: Number(newItem.id) }, { $set: newItem })
         } else {
