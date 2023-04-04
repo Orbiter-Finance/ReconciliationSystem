@@ -51,6 +51,7 @@ async function startFetch() {
           logger.info(`checkResult source value error,tranId:${item.transcationId}, inId:${item.inId}, value: ${value}`)
           return
         }
+        item.inData = checkResult[0]
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
         const findOne = await makerTxModel.findOne({ id: Number(newItem.id) });
         if (findOne) {
@@ -96,130 +97,17 @@ async function startCheck() {
       logger.info('delete---', doc.transcationId, r[0].status)
       await makerTxModel.findOneAndDelete({id: id});
     }
-  }, { concurrency: 10 })
-}
-
-async function startMatch() {
-  let docs = await makerTxModel.find({ status: { $ne: 'matched' }})
-  // logger.info('docs.length:',docs.length)
-  await bluebird.map(docs, async (doc: any) => {
-    const hits = await fakerMakerTx.find({amount: doc.toAmount});
-    // logger.info('hits.length:', hits.length)
-    if (!hits.length) {
-      return
-    }
-    
-    const filterResult = hits.filter(e => {
-      // logger.info('address:',e.to_address, doc.replyAccount, doc.replyAccount===e.to_address, utils.isEqualsAddress(e.to_address, doc.replyAccount))
-      return utils.isEqualsAddress(e.to_address, doc.replyAccount)
-    })
-    if (filterResult.length === 1) {
-      const update = {
-        status: 'matched',
-        matchedTx: filterResult
-      };
-      let ur = await makerTxModel.findOneAndUpdate({ id: doc.id }, { $set: update })
-      logger.info(`${doc.transcationId}: match success`)
-    } else if (filterResult.length > 1) {
-      const update = {
-        status: 'warning',
-        warnTxList: filterResult.map(item => item.tx_hash)
-      };
-      // let newDoc = doc.toJSON()
-      // newDoc.status = 'warning'
-      // newDoc.warnTxList = filterResult.map(item => item.tx_hash);
-      let ur = await makerTxModel.findOneAndUpdate({ id: doc.id }, { $set: update })
-      logger.info(`${doc.transcationId}: warning`)
+    if (!doc.inData) {
+      const checkSql = `SELECT * FROM transaction WHERE id = ${doc.inId} `;
+      const [checkResult]: any = await pool.query(checkSql);
+      if (checkResult) {
+        await makerTxModel.findOneAndUpdate({ id: Number(doc.id) }, { $set: { inData: checkResult[0] } })
+      }
+      logger.info('update inData by check', doc.transcationId)
     }
   }, { concurrency: 10 })
 }
 
-
-
-const checkStarknetTx = async function (makerTx) {
-  if (!makerTx.replyAccount || !makerTx.toAmount) {
-    return false;
-  }
-
-  const toAmount = makerTx.toAmount.slice(0, makerTx.toAmount.length - 4) + "0000";
-  const matcheds = await starknetTxModel.find({
-    "input.6": BigNumber.from(makerTx.replyAccount).toString(),
-    "input.7": {
-      $in: [BigNumber.from(toAmount).toString(), makerTx.toAmount],
-    },
-  });
-
-  return matcheds;
-};
-const checkZk2Tx = async function (makerTx) {
-  if (!makerTx.replyAccount || !makerTx.toAmount) {
-    return false;
-  }
-
-  const matcheds = await zksyncliteTxModel.find({
-    to: makerTx.replyAccount.toLowerCase(),
-    value: "0x" + new BigNumberJs(makerTx.toAmount).toString(16),
-  });
-
-  return matcheds;
-};
-
-const checkOtherTx = async function (makerTx) {
-  const url = getScanUrl(makerTx);
-
-  if (!url || !makerTx.toAmount) {
-    return undefined;
-  }
-  try {
-    const res = await axios.get(url);
-    // logger.info("url", url, makerTx.transcationId);
-    if (isZksynclite(makerTx)) {
-      if (res.data.status === "success" && Array.isArray(res.data.result.list)) {
-        const list = res.data.result.list.filter((item) => {
-          if (item.failReason !== null || item.op.type !== "Transfer") {
-            return false;
-          }
-          if (BigNumber.from(makerTx.toAmount).eq(item.op.amount) && isMaker(item.op.from)) {
-            return true;
-          }
-          return false;
-        });
-        return list;
-      }
-    } else {
-      if (res.data.status === "1" && Array.isArray(res.data.result)) {
-        const list = res.data.result.filter((item) => {
-          if (BigNumber.from(makerTx.toAmount).eq(item.value) && isMaker(item.from)) {
-            return true;
-          }
-          return false;
-        });
-
-        return list;
-      }
-    }
-    throw new Error(`res error ${res.data.status}`);
-  } catch (error) {
-    logger.error("get scan data error", error);
-    return undefined;
-  }
-};
-
-const checkArbNova = async function (makerTx) {
-  let list = []
-  try {
-    const txList = await arbNovaScan(makerTx.replyAccount, 200);
-    txList.map(e => {
-      const amountValid = e.amount === makerTx.toAmount
-      if (amountValid) {
-        list.push(e)
-      }
-    })
-  } catch (error) {
-    logger.error('scan nova error:', error)
-  }
-  return list
-}
 async function startMatch2() {
   logger.info(`startMatch2`)
   const makerTxs = await makerTxModel.find({
@@ -229,17 +117,6 @@ async function startMatch2() {
   let findNum = 0;
   logger.info(`startMatch2: makerTxs.length:${makerTxs.length}`)
   await bluebird.map(makerTxs, async (makerTx: any, index) => {
-    // let res:any = [];
-    // if (isStarknet(makerTx)) {
-    //   res = await checkStarknetTx(makerTx)
-    // } else if (isZkSyncera(makerTx)) {
-    //   res = await checkZk2Tx(makerTx)
-    // } else if (isArbNova(makerTx)) {
-    //   res = await checkArbNova(makerTx)
-    //   // console.log('----res', makerTx.transcationId ,makerTx.replyAccount, makerTx.toAmount, res.length)
-    // } else {
-    //   res = await checkOtherTx(makerTx)
-    // }
     let res = await getMatchedTxByMakerTx(makerTx)
     if (res && res.length === 1) {
       const [data]: any = res;
