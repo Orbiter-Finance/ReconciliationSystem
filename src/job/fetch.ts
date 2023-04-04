@@ -23,9 +23,9 @@ async function startFetch() {
   const start = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
   const maxIdDoc = await makerTxModel.find({}).sort({ id: -1 }).limit(1);
   let sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND toAmount != 'null' AND toAmount != 'undefined' AND createdAt <= '${start}' AND createdAt >= '20230316'`
-  // if (maxIdDoc && maxIdDoc.length) {
-  //   sql = `${sql} AND id > ${maxIdDoc[0].id}`
-  // }
+  if (maxIdDoc && maxIdDoc.length) {
+    sql = `${sql} AND id > ${maxIdDoc[0].id}`
+  }
   let [list] : any = await pool.query(sql)
   logger.info(`fetch sql ${sql}, length:`, list.length)
   try {
@@ -55,7 +55,7 @@ async function startFetch() {
         const newItem = { ...item, createdAt: new Date(item.createdAt), updatedAt: new Date(item.updatedAt) }
         const findOne = await makerTxModel.findOne({ id: Number(newItem.id) });
         if (findOne) {
-          logger.info('update one', newItem.transcationId)
+          // logger.info('update one', newItem.transcationId)
           newItem.inData = checkResult[0];
           await makerTxModel.findOneAndUpdate({ id: Number(newItem.id) }, { $set: newItem })
         } else {
