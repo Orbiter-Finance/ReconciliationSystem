@@ -106,6 +106,22 @@ async function startCheck() {
       logger.info('update inData by check', doc.transcationId)
     }
   }, { concurrency: 10 })
+  logger.info('checking inData')
+  const noInDataDocs = await makerTxModel.find({
+    inData: { $exists: false }
+  })
+  logger.info('need update inData length: ', noInDataDocs.length)
+  await bluebird.map(noInDataDocs, async (doc: any) => {
+    if (doc.inData) {
+      return
+    }
+    const checkSql = `SELECT * FROM transaction WHERE id = ${doc.inId} `;
+    const [checkResult]: any = await pool.query(checkSql);
+    if (checkResult && checkResult.length) {
+      await makerTxModel.findOneAndUpdate({ id: Number(doc.id) }, { $set: { inData: checkResult[0] } })
+    }
+  }, { concurrency: 3 })
+
 }
 
 async function startMatch2() {
