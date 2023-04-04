@@ -1,8 +1,20 @@
 {
     "compilerOptions": {
       "esModuleInterop": true,
-      "resolveJsonModule": true
+      "resolveJsonModule": true,
+      "outDir": "./dist",
+      "skipLibCheck":true
     },
+    "files": [
+      "./src/app.ts"
+    ],
     "include": ["src/**/*.ts", "src/**/*.d.ts"],
+    "exclude": [
+      "node_modules",
+      "**/*.spec.ts",
+      "typings/*",
+      "node_modules/**",
+      "dist"
+    ]
   }
   

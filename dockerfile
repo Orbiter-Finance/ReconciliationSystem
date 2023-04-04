@@ -9,12 +9,14 @@ WORKDIR /home/ReconciliationSystem
 RUN git checkout -b devlop origin/devlop
 RUN git pull
 RUN npm install -g ts-node
+RUN npm install -g typescript
 # COPY ./src ./src
 COPY ./env.ts ./src/config/env.ts
 COPY ./public ./public
 RUN yarn config set ignore-engines true
 RUN yarn global add pm2
 RUN yarn --network-timeout 600000
+RUN tsc
 # RUN run build
 EXPOSE 3000
-CMD ["ts-node","./src/app.ts"]
+CMD ["pm2-runtime","./dist/app.js"]

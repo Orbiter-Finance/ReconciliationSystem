@@ -10,3 +10,4 @@ package-lock.json
 env.js
 env.ts
 OrbterScanTxMatch
+dist/
