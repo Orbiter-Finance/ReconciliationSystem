@@ -67,7 +67,7 @@ async function startFetch() {
       }
     }, { concurrency: 10 })
   } catch (error) {
-    
+    logger.error(`fetch error`, error)
   }
 
 }
