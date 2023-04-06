@@ -22,7 +22,7 @@ import remarkModel from '../model/remark'
 import zksyncliteTxModel from '../model/zksynceraTx'
 import arbNovaScan from '../utils/scanNova'
 import { getScanDataByMakerTx } from '../service/matchService/getScanDataByMakerTx'
-
+import { IDoneCallbackBody } from '../constant/type'
 const router = new Router();
 
 router.get("/newlist", async (ctx) => {
@@ -388,6 +388,72 @@ router.get("/userTxList", async (ctx) => {
   let flist = await getScanDataByMakerTx(failTx, failTxTime)
   result.data = flist
   return
+})
+
+router.get('/failByAdminList', async (ctx) => {
+  let { endTime, sid, size = 20 } = ctx.query;
+  const result = { code: 0, msg: '', data: [], sid: 0 }
+  size = parseInt(String(size))
+  const limit = size + 1
+  if (!size) {
+    result.code = 1;
+    result.msg = 'Parameter error'
+    ctx.body = result;
+    return
+  }
+  const where:any = {
+    status: { $nin: ['matched', 'warning'] },
+    confirmStatus: { $eq: constant.confirmStatus.failByAdmin },
+    signature: { $exists: true },
+    autoReplyStatus: { $exists: true, $eq: 'init' }
+  }
+  if (endTime) {
+    where['inData.timestamp'] = {
+      $lte: new Date(Number(endTime)),
+    }
+  }
+  if (sid) {
+    where.id = { $gt: Number(sid) }
+  }
+  logger.info(where)
+  const list = await makerTx.find(where).sort({ id: 1 }).limit(limit);
+  result.data = list;
+  if (list.length >= limit) {
+    result.data = list.slice(0, list.length -1)
+    result.sid = result.data[result.data.length - 1].id;
+  }
+  ctx.body = result
+})
+
+router.post('/doneCallback', async (ctx) => {
+  const body = ctx.request.body as IDoneCallbackBody;
+  const result = { code: 0, data: {}, msg: '' }
+  let {
+    transactionId,
+    status,
+    id,
+    hash
+  } = body
+  if (!transactionId || !status || !id || (status === 'success' && !hash)) {
+    result.code =1
+    result.msg = 'Parameter error'
+    ctx.body = result
+    return
+  }
+  const where = {
+    tranasctionId: transactionId,
+    id: id
+  }
+  const updateData: any = {}
+  if (status === 'success') {
+    updateData.autoReplyHash = hash;
+    updateData.autoReplyStatus = 'success'
+    updateData.status = constant.failMakerTransactionStatus.matched; 
+  } else {
+    updateData.autoReplyStatus = 'fail'
+  }
+  await makerTx.findOneAndUpdate(where, updateData)
+  ctx.body = result
 })
 
 export default router;

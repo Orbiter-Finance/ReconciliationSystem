@@ -19,7 +19,10 @@ let failMakerTransaction = new Schema({
     matchedScanTx: Object,
     warnTxList: { type: Array, default: [] },
     userLog: Object, // { uid name hash updateStatus role updateTime }
-    status: { type: String, index: true, default: 'init'}, // init matched warning
+    status: { type: String, index: true, default: 'init'}, // init, matched, warning
+    signature: String,
+    autoReplyStatus: { type: String, default: 'init' }, // init. fail, success
+    autoReplyHash: String,
     confirmStatus: { type: String, index: true, default: 'noConfirm' }, // noConfirm, successByAdmin,failByAdmin
 });
 

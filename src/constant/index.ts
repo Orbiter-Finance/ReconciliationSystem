@@ -1,3 +1,4 @@
+
 export const confirmStatus = {
     noConfirm: 'noConfirm',
     successByAdmin: 'successByAdmin',
@@ -21,4 +22,10 @@ export const decimalMap = {
     "USDT": 6,
     "USDC": 6,
     "DAI": 18,
+}
+
+export const failMakerTransactionStatus = {
+    matched: 'matched',
+    init: 'init',
+    warning: 'warning'
 }

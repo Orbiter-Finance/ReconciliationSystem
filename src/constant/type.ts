@@ -59,3 +59,10 @@ export interface InData {
   updatedAt: string
   value: string
 }
+
+export interface IDoneCallbackBody {
+  transactionId: String,
+  id: Number,
+  hash: String,
+  status: 'success' | 'fail'
+}

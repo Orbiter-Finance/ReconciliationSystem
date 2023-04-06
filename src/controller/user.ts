@@ -38,10 +38,10 @@ router.post("/submit", async (ctx) => {
         return;
     }
     const body: any = ctx.request.body;
-    const { makerTxId, hash } = body;
+    const { makerTxId, hash, signature } = body;
     const status = +body.status;
     const { uid, name, role } = ctx as any;
-    if (!makerTxId || ![0,1,2,3].includes(status)) {
+    if (!makerTxId || ![0,1,2,3].includes(status) || (!signature && status === 2)) {
         ctx.body = { code: 1, msg: 'Parameter error' };
         return;
     }
@@ -64,10 +64,13 @@ router.post("/submit", async (ctx) => {
         case 3: confirmStatus = constant.confirmStatus.doubtByAdmin;break;
     }
     const userLog = { uid, name, hash, updateStatus: status, role, updateTime: new Date() };
+    const updateData:any = { confirmStatus, userLog }
+    if (status === 2) {
+        updateData.signature = signature;
+    }
     await makerTx.updateOne({
         id: makerTxId,
-    }, { $set: { confirmStatus, userLog } });
-
+    }, { $set: updateData });
     ctx.body = { code: 0, msg: 'success' };
 });
 
