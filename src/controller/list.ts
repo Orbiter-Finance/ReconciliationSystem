@@ -113,6 +113,13 @@ router.get("/newlist", async (ctx) => {
         },
       },
     ];
+  } else if (state === constant.state.failByAdminAndAutoReply) {
+    where.$and = [
+      { status: { $nin: ["matched", "warning"] } },
+      {
+        confirmStatus: { $eq: constant.confirmStatus.failByAdminAndAutoReply }
+      }
+    ]
   }
   if (toChainId) {
     where.toChain = { $eq: toChainId }
@@ -184,6 +191,8 @@ router.get("/newlist", async (ctx) => {
           state = constant.state.successByAdmin;
         } else if (confirmStatus === constant.confirmStatus.failByAdmin) {
           state = constant.state.failByAdmin;
+        } else if (confirmStatus === constant.confirmStatus.failByAdminAndAutoReply) {
+          state = constant.state.failByAdminAndAutoReply;
         } else if (confirmStatus === constant.confirmStatus.doubtByAdmin) {
           state = constant.state.doubtByAdmin;
         } else if (status === "warning") {
@@ -276,7 +285,7 @@ router.get("/statistic", async (ctx) => {
   const failByAdminCountWhere = {
     ...where,
     status: { $nin: ["matched", "warning"] },
-    confirmStatus: { $eq: constant.confirmStatus.failByAdmin },
+    confirmStatus: { $in: [constant.confirmStatus.failByAdmin, constant.confirmStatus.failByAdminAndAutoReply] },
   };
   delete successByAdminCountWhere['inData.timestamp'] // ignore time
   delete failByAdminCountWhere['inData.timestamp'] // ignore time
@@ -286,6 +295,7 @@ router.get("/statistic", async (ctx) => {
       confirmStatus: {
         $nin: [
           constant.confirmStatus.failByAdmin,
+          constant.confirmStatus.failByAdminAndAutoReply,
           constant.confirmStatus.successByAdmin,
           constant.confirmStatus.doubtByAdmin,
         ],
@@ -299,6 +309,7 @@ router.get("/statistic", async (ctx) => {
       confirmStatus: {
         $nin: [
           constant.confirmStatus.failByAdmin,
+          constant.confirmStatus.failByAdminAndAutoReply,
           constant.confirmStatus.successByAdmin,
           constant.confirmStatus.doubtByAdmin,
         ],
@@ -403,7 +414,7 @@ router.get('/failByAdminList', async (ctx) => {
   }
   const where:any = {
     status: { $nin: ['matched', 'warning'] },
-    confirmStatus: { $eq: constant.confirmStatus.failByAdmin },
+    confirmStatus: { $eq: constant.confirmStatus.failByAdminAndAutoReply },
     signature: { $exists: true },
     autoReplyStatus: { $exists: true, $eq: 'init' }
   }

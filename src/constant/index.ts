@@ -3,6 +3,7 @@ export const confirmStatus = {
     noConfirm: 'noConfirm',
     successByAdmin: 'successByAdmin',
     failByAdmin: 'failByAdmin',
+    failByAdminAndAutoReply: 'failByAdminAndAutoReply',
     doubtByAdmin: 'doubtByAdmins'
 }
 
@@ -13,7 +14,8 @@ export const state = {
     failByAdmin: 3,
     failByMulti: 4,
     failByUnknown: 5,
-    doubtByAdmin: 6
+    doubtByAdmin: 6,
+    failByAdminAndAutoReply: 7
 }
 export const chainDesc = ['arbitrum', 'ethereum', 'optimism', 'starknet', 'zksyncera', 'zksynclite','polygon','metis','boba','bsc']
 

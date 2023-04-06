@@ -4,19 +4,11 @@ import user from '../model/user'
 import makerTx from '../model/failMakerTransaction'
 import remarkModel from '../model/remark'
 import { encrypt, decrypt, md5En } from '../utils/encrypt'
-const constant = require('../constant/index')
+import * as constant from '../constant/index'
+import bluebird from 'bluebird'
+import _ from 'lodash';
+import logger from '../utils/logger'
 const router = new Router();
-// async function userMiddleware(ctx, next) {
-//     const { token, baseInfo } = await decrypt(ctx?.req?.headers?.token);
-//     if (token) {
-//         const info = JSON.parse(baseInfo);
-//         ctx.uid = info.id;
-//         ctx.role = info.role;
-//         await next();
-//     } else {
-//         ctx.body = { msg: 'Login has expired, please login again', code: 401, status: 401 };
-//     }
-// }
 
 async function checkLogin(ctx) {
     const tokenStr = ctx.header['token'] || ctx.request.body.token || ctx.query.token
@@ -38,41 +30,57 @@ router.post("/submit", async (ctx) => {
         return;
     }
     const body: any = ctx.request.body;
-    const { makerTxId, hash, signature } = body;
+    let { makerTxId, hash, signature } = body;
     const status = +body.status;
     const { uid, name, role } = ctx as any;
-    if (!makerTxId || ![0,1,2,3].includes(status) || (!signature && status === 2)) {
+    if (!makerTxId || (Array.isArray(makerTxId) && makerTxId.length < 1) || ![0,1,2,3,4].includes(status) || (!signature && status === 4)) {
         ctx.body = { code: 1, msg: 'Parameter error' };
         return;
     }
-    const tx = await makerTx.findOne({
-        id: makerTxId
+    if (!Array.isArray(makerTxId)) {
+        makerTxId = [makerTxId]
+    }
+    makerTxId = _.uniq(makerTxId)
+    const txList = await makerTx.find({
+        id: { $in: makerTxId }
     });
-    if(!tx){
-        ctx.body = { code: 1, msg: 'Transactions do not exist' };
+    if (txList.length !== makerTxId.length) {
+        ctx.body = { code: 1, msg: 'Someone transactions do not exist' };
         return;
     }
-    if (tx.status === 'matched') {
-        ctx.body = { code: 1, msg: 'Unable to operate a successful transaction' };
-        return;
+    for (const tx of txList) {
+        if (tx.status === 'matched') {
+            ctx.body = { code: 1, msg: 'Unable to operate a successful transaction' };
+            return;
+        }
+    }
+    if (status !== 3 && makerTxId.length > 1) {
+        ctx.body = { code: 1, msg: 'Unable to operate Multiple transaction unless doubtByAdmin' };
+        return
     }
     let confirmStatus;
     switch(status) {
         case 0: confirmStatus = constant.confirmStatus.noConfirm;break;
         case 1: confirmStatus = constant.confirmStatus.successByAdmin;break;
-        case 2: confirmStatus = constant.confirmStatus.failByAdmin;break;
+        case 2: confirmStatus = constant.confirmStatus.failByAdmin;break; // not auto reply
         case 3: confirmStatus = constant.confirmStatus.doubtByAdmin;break;
+        case 4: confirmStatus = constant.confirmStatus.failByAdminAndAutoReply;break;
     }
     const userLog = { uid, name, hash, updateStatus: status, role, updateTime: new Date() };
     const updateData:any = { confirmStatus, userLog }
-    if (status === 2) {
+    if (status === 4) {
         updateData.signature = signature;
     }
-    await makerTx.updateOne({
-        id: makerTxId,
-    }, { $set: updateData });
+    await bluebird.map(makerTxId, async (id) => {
+        logger.info(`submit update, id: ${id}, updateData:${JSON.stringify(updateData)}`)
+        await makerTx.updateOne({
+            id: id,
+        }, { $set: updateData })
+    }, { concurrency: 2 });
     ctx.body = { code: 0, msg: 'success' };
 });
+
+
 
 
 router.post("/remarkSubmit", async (ctx) => {
