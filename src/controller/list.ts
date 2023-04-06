@@ -415,7 +415,7 @@ router.get('/failByAdminList', async (ctx) => {
   if (sid) {
     where.id = { $gt: Number(sid) }
   }
-  logger.info(where)
+  logger.info(JSON.stringify(where))
   const list = await makerTx.find(where).sort({ id: 1 }).limit(limit);
   result.data = list;
   if (list.length >= limit) {
