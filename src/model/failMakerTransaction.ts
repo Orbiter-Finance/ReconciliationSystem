@@ -22,6 +22,7 @@ let failMakerTransaction = new Schema({
     status: { type: String, index: true, default: 'init'}, // init, matched, warning
     signature: String,
     autoReplyStatus: { type: String, default: 'init' }, // init. fail, success
+    autoReplyFailMsg: String,
     autoReplyHash: String,
     confirmStatus: { type: String, index: true, default: 'noConfirm' }, // noConfirm, successByAdmin,failByAdmin
 });

@@ -436,24 +436,31 @@ router.get('/failByAdminList', async (ctx) => {
   ctx.body = result
 })
 
-router.post('/doneCallback', async (ctx) => {
+router.post('/autoReplyCallback', async (ctx) => {
   const body = ctx.request.body as IDoneCallbackBody;
   const result = { code: 0, data: {}, msg: '' }
+  ctx.body = result
   let {
     transactionId,
     status,
-    id,
-    hash
+    hash,
+    failMessage
   } = body
-  if (!transactionId || !status || !id || (status === 'success' && !hash)) {
-    result.code =1
+  logger.info(`autoReplyCallback, body: ${JSON.stringify(body)}`)
+  if (!transactionId || (status !== 'fail' && status !== 'success')  || (status === 'success' && !hash) || (status === 'fail' && !failMessage)) {
+    result.code = 1
     result.msg = 'Parameter error'
-    ctx.body = result
     return
   }
   const where = {
-    tranasctionId: transactionId,
-    id: id
+    transcationId: transactionId,
+    confirmStatus: constant.confirmStatus.failByAdminAndAutoReply
+  }
+  const tx = await makerTx.findOne(where);
+  if (!tx) {
+    result.code = 1
+    result.msg = 'Transaction not found'
+    return 
   }
   const updateData: any = {}
   if (status === 'success') {
@@ -462,8 +469,10 @@ router.post('/doneCallback', async (ctx) => {
     updateData.status = constant.failMakerTransactionStatus.matched; 
   } else {
     updateData.autoReplyStatus = 'fail'
+    updateData.autoReplyFailMsg = failMessage
   }
-  await makerTx.findOneAndUpdate(where, updateData)
+  logger.info(`autoReplyCallback, where:${JSON.stringify(where)}, updateData:${JSON.stringify(updateData)}`)
+  await makerTx.findOneAndUpdate(where, { $set: updateData })
   ctx.body = result
 })
 

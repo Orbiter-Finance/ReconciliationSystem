@@ -62,7 +62,7 @@ export interface InData {
 
 export interface IDoneCallbackBody {
   transactionId: String,
-  id: Number,
+  failMessage: String,
   hash: String,
   status: 'success' | 'fail'
 }
