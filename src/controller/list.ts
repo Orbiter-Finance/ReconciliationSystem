@@ -109,6 +109,7 @@ router.get("/newlist", async (ctx) => {
             constant.confirmStatus.failByAdmin,
             constant.confirmStatus.successByAdmin,
             constant.confirmStatus.doubtByAdmin,
+            constant.confirmStatus.failByAdminAndAutoReply,
           ],
         },
       },
