@@ -66,3 +66,37 @@ export interface IDoneCallbackBody {
   hash: String,
   status: 'success' | 'fail'
 }
+
+export type InvalidTransactionMysql = {
+  id: number,
+  hash: string,
+  nonce: number,
+  blockHash: string,
+  blockNumber: number,
+  transactionIndex: number,
+  from: string,
+  to: string,
+  value: string,
+  symbol: string,
+  gasPrice: number,
+  gas: number,
+  input: string,
+  status: number,
+  tokenAddress: string,
+  timestamp: string,
+  side: number,
+  fee: string,
+  feeToken: string,
+  chainId: number,
+  source: string,
+  memo: string,
+  expectValue: string,
+  makerId: string,
+  transferId: string,
+  lpId: string,
+  extra: string,
+  replyAccount: string,
+  replySender: string,
+  createdAt: string,
+  updatedAt: string
+}

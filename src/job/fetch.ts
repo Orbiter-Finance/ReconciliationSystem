@@ -1,25 +1,16 @@
 import pool from '../model/dashbroddb'
 import makerTxModel from '../model/failMakerTransaction'
 import bluebird from 'bluebird'
-import { initMongodb } from '../model/initMongodb'
-import fakerMakerTx from '../model/fakerMakerTx'
-import * as utils from '../utils'
 import logger from '../utils/logger'
 import moment from 'moment'
 import * as constant from '../constant/index'
-import isMaker from '../utils/isMaker'
-import getScanUrl from '../utils/getScanUrl'
-import { isZksynclite, isStarknet, isZkSyncera, isArbNova } from '../utils/is'
-import starknetTxModel from '../model/starknetTx'
-import zksyncliteTxModel from '../model/zksynceraTx'
-import { BigNumber } from '@ethersproject/bignumber'
-import BigNumberJs from 'bignumber.js'
-import axios from 'axios'
-import arbNovaScan from '../utils/scanNova'
 import { getMatchedTxByMakerTx } from '../service/matchService/getMatchedTxByMakerTx'
+import invalidTransaction, { InvalidTransaction } from '../model/invalidTransaction'
+import { InvalidTransactionMysql } from '../constant/type'
+import abnormalOutTransactionModel, {AbnormalOutTransaction} from '../model/abnormalOutTransaction'
 const REG = new RegExp(/^(?:\d*90..|.*?90..(?:0{0,10}|$))$/)
 
-async function startFetch() {
+export async function startFetch() {
   const start = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
   const maxIdDoc = await makerTxModel.find({}).sort({ id: -1 }).limit(1);
   let sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND toAmount != 'null' AND toAmount != 'undefined' AND createdAt <= '${start}' AND createdAt >= '20230316'`
@@ -72,7 +63,7 @@ async function startFetch() {
 
 }
 
-async function startCheck() {
+export async function startCheck() {
   const docs = await makerTxModel.find({
     status: { $eq: 'init' },
     confirmStatus: constant.confirmStatus.noConfirm
@@ -124,7 +115,7 @@ async function startCheck() {
 
 }
 
-async function startMatch2() {
+export async function startMatch2() {
   logger.info(`startMatch2`)
   const makerTxs = await makerTxModel.find({
     status: { $nin: ["matched", "warning"] },
@@ -171,48 +162,107 @@ async function startMatch2() {
 }
 
 
-export async function start() {
-  // await initMongodb()
-  let fetching = false
-  let checking = false
-  let matching = false
-  setInterval(() => {
-    if (fetching) {
-      logger.info('fetching')
-      return
-    }
-    fetching = true
-    let start = moment().format('YYYY-MM-DD HH:mm:ss');
-    logger.info(`start fetching at at ${moment().format('YYYY-MM-DD HH:mm:ss')}`)
-    startFetch()
-    .catch(error => logger.error('fetching error:',error))
-    .finally(() => { fetching = false;logger.info(`end fetch: start:${start} end:${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
-  }, 30 * 1000)
+export async function fetchInvalidTransaction() {
+  const maxIdDoc = await invalidTransaction.find({}).sort({ id: -1 }).limit(1);
+  let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-04-13' AND side = 0 AND memo = 0`
+  if (maxIdDoc && maxIdDoc.length) {
+    sql = `${sql} AND id > ${maxIdDoc[0].id}`;
+  }
+  let result = await pool.query(sql)
+  const list = result[0] as InvalidTransactionMysql[]
+  logger.info(`fetchInvalidTransaction sql: ${sql} , length:${list.length}`)
+  if (!list.length) {
+    return
+  }
+  await bluebird.map(list, async (item) => {
+    const hash = item.hash;
+    const doc = await invalidTransaction.findOne({
+      hash: hash
+    })
 
-  setInterval(() => {
-    if (checking) {
-      logger.info('checking')
+    const insertData = item as unknown as InvalidTransaction
+    if (doc) {
       return
     }
-    let start = moment().format('YYYY-MM-DD HH:mm:ss');
-    logger.info(`start checking at ${start}`)
-    checking = true
-    startCheck()
-    .catch(error => logger.error('checking error:',error))
-    .finally(() => { checking = false;logger.info(`end check start:${start} end:${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
-  }, 30 * 1000)
-
-  setInterval(() => {
-    if (matching) {
-      logger.info('matching')
-      return
-    }
-    let start = moment().format('YYYY-MM-DD HH:mm:ss');
-    logger.info(`start matching at ${start}`)
-    matching = true
-    startMatch2()
-    .catch(error => logger.error('matching error:',error))
-    .finally(() => { matching = false;logger.info(`end match start:${start} end: ${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
-  }, 30 * 1000)
+    insertData.timestamp = new Date(item.timestamp)
+    insertData.createdAt = new Date(item.createdAt)
+    insertData.updatedAt = new Date(item.updatedAt)
+    await invalidTransaction.create(insertData)
+  }, {concurrency: 3})
 }
+
+
+export async function fetchAbnormalOutTransaction() {
+  const end = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+  let sql = `SELECT * FROM transaction WHERE \`status\` !=99 AND \`timestamp\` > '2023-03-15' AND \`timestamp\` < '${end}' AND side = 1`;
+  const maxIdDoc = await abnormalOutTransactionModel.find({}).sort({ id: -1 }).limit(1);
+  if (maxIdDoc && maxIdDoc.length) {
+    sql = `${sql} AND id > ${maxIdDoc[0].id}`;
+  }
+  console.log(sql)
+  let result = await pool.query(sql)
+  const list = result[0] as AbnormalOutTransaction[]
+  logger.info(`fetchAbnormalOutTransaction sql: ${sql} , length:${list.length}`)
+  await bluebird.map(list, async (item) => {
+    const hash = item.hash;
+    const doc = await abnormalOutTransactionModel.findOne({
+      hash: hash
+    })
+
+    const insertData = item
+    if (doc) {
+      return
+    }
+    insertData.timestamp = new Date(item.timestamp)
+    insertData.createdAt = new Date(item.createdAt)
+    insertData.updatedAt = new Date(item.updatedAt)
+    await abnormalOutTransactionModel.create(insertData)
+  }, {concurrency: 3})
+}
+
+// export async function start() {
+//   // await initMongodb()
+//   let fetching = false
+//   let checking = false
+//   let matching = false
+//   setInterval(() => {
+//     if (fetching) {
+//       logger.info('fetching')
+//       return
+//     }
+//     fetching = true
+//     let start = moment().format('YYYY-MM-DD HH:mm:ss');
+//     logger.info(`start fetching at at ${moment().format('YYYY-MM-DD HH:mm:ss')}`)
+//     startFetch()
+//     .catch(error => logger.error('fetching error:',error))
+//     .finally(() => { fetching = false;logger.info(`end fetch: start:${start} end:${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
+//   }, 30 * 1000)
+
+//   setInterval(() => {
+//     if (checking) {
+//       logger.info('checking')
+//       return
+//     }
+//     let start = moment().format('YYYY-MM-DD HH:mm:ss');
+//     logger.info(`start checking at ${start}`)
+//     checking = true
+//     startCheck()
+//     .catch(error => logger.error('checking error:',error))
+//     .finally(() => { checking = false;logger.info(`end check start:${start} end:${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
+//   }, 30 * 1000)
+
+//   setInterval(() => {
+//     if (matching) {
+//       logger.info('matching')
+//       return
+//     }
+//     let start = moment().format('YYYY-MM-DD HH:mm:ss');
+//     logger.info(`start matching at ${start}`)
+//     matching = true
+//     startMatch2()
+//     .catch(error => logger.error('matching error:',error))
+//     .finally(() => { matching = false;logger.info(`end match start:${start} end: ${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
+//   }, 30 * 1000)
+// }
+
 // start()

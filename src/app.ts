@@ -7,7 +7,7 @@ import userRouter from './controller/user'
 import staticDir from 'koa-static'
 import { node_env } from './config/index' 
 import logger from './utils/logger'
-import * as fetch from './job/fetch'
+import * as job from './job'
 const app = new Koa();
 
 
@@ -52,7 +52,7 @@ app.use(userRouter.routes())
 initMongodb().then(() => {
     logger.info('----', node_env.isDev, node_env.isProd)
     if (node_env.isDev || node_env.isProd) {
-        fetch.start();
+        job.start();
         initUser();
     }
     app.listen(3000, () => {
