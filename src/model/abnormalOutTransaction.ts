@@ -44,6 +44,44 @@ export type AbnormalOutTransaction = {
 let Schema = mongoose.Schema;
 let AbnormalOutTransaction = new Schema<AbnormalOutTransaction>({
     id: { type: Number, unique: true },
-    hash: { type: String, unique: true }
+    hash: { type: String, unique: true },
+    nonce: Number,
+    blockHash: String,
+    blockNumber: Number,
+    transactionIndex: Number,
+    from: String,
+    to: String,
+    value: String,
+    symbol: String,
+    gasPrice: Number,
+    gas: Number,
+    input: String,
+    status: Number,
+    tokenAddress: String,
+    timestamp: Date,
+    side: Number,
+    fee: String,
+    feeToken: String,
+    chainId: Number,
+    source: String,
+    memo: String,
+    expectValue: String,
+    makerId: String,
+    transferId: String,
+    lpId: String,
+    extra: Object,
+    // "extra": {
+    //   "ua": {
+    //     "toTokenAddress": "0x0000000000000000000000000000000000000000"
+    //   },
+    //   "ebcId": "",
+    //   "server": "E4E",
+    //   "toSymbol": "ETH"
+    // },
+
+    replyAccount: String,
+    replySender: String,
+    createdAt: Date,
+    updatedAt: Date,
 })
 export default mongoose.model('abnormalOutTransaction', AbnormalOutTransaction, 'abnormalOutTransaction')

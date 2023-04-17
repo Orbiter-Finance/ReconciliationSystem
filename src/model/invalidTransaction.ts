@@ -56,6 +56,44 @@ let Schema = mongoose.Schema;
 let InvalidTransaction = new Schema<InvalidTransaction>({
     id: { type: Number, unique: true },
     hash: { type: String, unique: true },
+    nonce: Number,
+    blockHash: String,
+    blockNumber: Number,
+    transactionIndex: Number,
+    from: String,
+    to: String,
+    value: String,
+    symbol: String,
+    gasPrice: Number,
+    gas: Number,
+    input: String,
+    status: Number,
+    tokenAddress: String,
+    timestamp: Date,
+    side: Number,
+    fee: String,
+    feeToken: String,
+    chainId: Number,
+    source: String,
+    memo: String,
+    expectValue: String,
+    makerId: String,
+    transferId: String,
+    lpId: String,
+    extra: Object,
+    // "extra": {
+    //   "ua": {
+    //     "toTokenAddress": "0x0000000000000000000000000000000000000000"
+    //   },
+    //   "ebcId": "",
+    //   "server": "E4E",
+    //   "toSymbol": "ETH"
+    // },
+
+    replyAccount: String,
+    replySender: String,
+    createdAt: Date,
+    updatedAt: Date,
 
     matchedTxHash: { type: String, index: true },
     matchedTx: Object,
@@ -66,45 +104,6 @@ let InvalidTransaction = new Schema<InvalidTransaction>({
     autoReplyFailMsg: String,
     autoReplyHash: String,
     confirmStatus: { type: String, index: true, default: 'noConfirm' }, // noConfirm, successByAdmin,failByAdmin
-
-
-    // nonce: Number,
-    // blockHash: String,
-    // blockNumber: Number,
-    // transactionIndex: Number,
-    // from: String,
-    // to: String,
-    // value: String,
-    // symbol: String,
-    // gasPrice: Number,
-    // gas: Number,
-    // input: String,
-    // originStatus: Number,
-    // tokenAddress: String,
-    // timestamp: Date,
-    // side: Number,
-    // fee: String,
-    // feeToken: String,
-    // chainId: Number,
-    // source: String,
-    // memo: String,
-    // expectValue: String,
-    // makerId: String,
-    // transferId: String,
-    // lpId: String,
-    // extra: Object,
-    // // "extra": {
-    // //   "ua": {
-    // //     "toTokenAddress": "0x0000000000000000000000000000000000000000"
-    // //   },
-    // //   "ebcId": "",
-    // //   "server": "E4E",
-    // //   "toSymbol": "ETH"
-    // // },
-    // replyAccount: String,
-    // replySender: String,
-    // createdAt: Date,
-    // updatedAt: Date
   });
 
 export default mongoose.model('invalidTransaction', InvalidTransaction, 'invalidTransaction');
