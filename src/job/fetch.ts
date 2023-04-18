@@ -271,3 +271,26 @@ export async function matchInvalidReceiveTransaction() {
     }
   }, { concurrency: 2 })
 }
+
+export async function checkAbnormalOutTransaction() {
+  let done = false;
+  let where: { id?: any } = {};
+  let pageSize = 100;
+  do {
+    const docs = await abnormalOutTransactionModel.find(where).sort({id: -1}).limit(pageSize).lean();
+    await bluebird.map(docs, async (doc) => {
+      const sql = `SELECT * FROM transaction WHERE \`status\` = 99 AND id=${doc.id}`
+      let result = await pool.query(sql)
+      const list = result[0] as InvalidTransactionMysql[]
+      if (list.length) {
+        logger.info(`checkAbnormalOutTransaction delete id:${doc.id}`)
+        await abnormalOutTransactionModel.deleteOne({ id: doc.id })
+      } 
+    });
+    if (docs.length && docs.length === pageSize) {
+      where.id = { $lt: docs[docs.length - 1].id }
+    } else {
+      done = true
+    }
+  } while(!done)
+}
