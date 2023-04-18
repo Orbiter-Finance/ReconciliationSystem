@@ -17,7 +17,7 @@ export default async function getScanTxs(address: string, chain: Chains): Promis
       return res.data.result
     }
   } catch (error) {
-    logger.error('getScanTxs error:', error)
+    logger.error(`getScanTxs url:${url} error:`, error)
   }
 
   return undefined

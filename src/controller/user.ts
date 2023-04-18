@@ -8,21 +8,9 @@ import * as constant from '../constant/index'
 import bluebird from 'bluebird'
 import _ from 'lodash';
 import logger from '../utils/logger'
+import { checkLogin } from '../service/user_service'
 const router = new Router();
 
-async function checkLogin(ctx) {
-    const tokenStr = ctx.header['token'] || ctx.request.body.token || ctx.query.token
-    const { token, baseInfo } = await decrypt(tokenStr);
-    if (token) {
-        const info = JSON.parse(baseInfo);
-        ctx.uid = info.id;
-        ctx.name = info.name;
-        ctx.role = info.role;
-        return true
-    } else {
-        return false
-    }
-}
 
 router.post("/submit", async (ctx) => {
     if (!await checkLogin(ctx)) {
@@ -79,7 +67,6 @@ router.post("/submit", async (ctx) => {
     }, { concurrency: 2 });
     ctx.body = { code: 0, msg: 'success' };
 });
-
 
 
 

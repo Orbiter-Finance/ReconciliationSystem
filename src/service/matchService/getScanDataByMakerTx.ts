@@ -6,10 +6,11 @@ import getArbNovaScanTxs from './txs/getArbNovaScanTxs'
 import getZkSynceraTxs from './txs/getZkSynceraTxs'
 import getScanTokenTxs from './txs/getScanTokenTxs'
 import getScanTxs from './txs/getScanTxs'
-import isMaker from '../../utils/isMaker'
+import isMaker, {isMaker2 } from '../../utils/isMaker'
 import { ArbNovaTx, ScanTokenTx, ScanTx, StarknetTx, ZkSynceraTx, ZkSyncliteTx } from '../../constant/tx.types'
 import moment from 'moment'
 import { getFormatDate } from '../../utils/index'
+import { InvalidTransaction} from '../../model/invalidTransaction'
 export async function getScanDataByMakerTx(
   makerTx: MakerTx,
   startTime?: number
@@ -69,6 +70,70 @@ export async function getScanDataByMakerTx(
       const timeValid = (Number(item.timeStamp) * 1000) >= startTime
       item.createdAt = getFormatDate((Number(item.timeStamp) * 1000), 0)
       return timeValid && isMaker(item.from)
+    })
+  }
+  return list || []
+}
+
+export async function getScanDataByInvalidReceiveTransaction(
+  tx: InvalidTransaction,
+  startTime?: number
+): Promise<ZkSynceraTx[] | ScanTokenTx[] | ScanTx[] | StarknetTx[] | ZkSyncliteTx[] | ArbNovaTx[] | undefined> {
+  const { from } = tx
+  const chainId = String(tx.chainId)
+  if (!from || !chainId || !isChainId(chainId)) {
+    return undefined
+  }
+
+  if (isStarknet(chainId)) {
+    return getStarknetTxs(from, startTime)
+  }
+
+  if (isZksynclite(chainId)) {
+    let list = await getZkSyncliteTxs(from)
+    if (list && list.length) [
+      list = list.filter((item) => {
+        const timeValid = moment(new Date(item.createdAt)).isAfter(moment(new Date(startTime)))
+        return timeValid && isMaker(item.op.from)
+      })
+    ]
+    return list
+  }
+
+  if (isArbNova(chainId)) {
+    let list = await getArbNovaScanTxs(from)
+    if (list && list.length) {
+      list = list.filter(item => {
+        const timeValid = moment(new Date(item.createdAt)).isAfter(moment(new Date(startTime)))
+        return timeValid && isMaker(item.from)
+      })
+    }
+    return list
+  }
+
+  if (isZkSyncera(chainId)) {
+    let list = await getZkSynceraTxs(from)
+    if (list && list.length) {
+      list = list.filter(item => {
+        return isMaker(item.from)
+      })
+    }
+    return list
+  }
+
+  const toSymbol = tx.symbol
+  const toTokenAddress = tx.tokenAddress 
+  let list = [];
+  if (['DAI', 'USDC', 'USDT'].includes(toSymbol) || isWETHChain(chainId)) {
+    list = await getScanTokenTxs(from, toTokenAddress, chainId)
+  } else {
+    list = await getScanTxs(from, chainId)
+  }
+  if (list && list.length) {
+    list = list.filter(item => {
+      const timeValid = (Number(item.timeStamp) * 1000) >= startTime
+      item.createdAt = getFormatDate((Number(item.timeStamp) * 1000), 0)
+      return timeValid && isMaker2(item.from)
     })
   }
   return list || []

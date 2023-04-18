@@ -1,6 +1,7 @@
+import { Context } from 'koa'
 import env from '../config/env'
 import user from '../model/user'
-import { md5En } from '../utils/encrypt'
+import { md5En, decrypt } from '../utils/encrypt'
 import logger from '../utils/logger';
 
 export async function initUser() {
@@ -20,5 +21,21 @@ export async function initUser() {
             await user.findOneAndUpdate({ name }, { password, role })
             logger.info('Update user', name);
         }
+    }
+}
+
+export async function checkLogin(ctx: Context) {
+    const body = <{ token?: string }>ctx.request.body
+    const query = <{ token?: string }>ctx.query
+    const tokenStr = ctx.header['token'] as string || body.token || query.token
+    const { token, baseInfo } = await decrypt(tokenStr);
+    if (token) {
+        const info = JSON.parse(baseInfo);
+        ctx.uid = info.id;
+        ctx.name = info.name;
+        ctx.role = info.role;
+        return true
+    } else {
+        return false
     }
 }

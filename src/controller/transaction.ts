@@ -8,6 +8,9 @@ import {ethers} from 'ethers'
 import mongooseLong from 'mongoose-long'
 import mongoose from 'mongoose'
 import logger from '../utils/logger'
+import checkLogin from '../middleware/checkLogin'
+import _ from 'lodash'
+import { getScanDataByInvalidReceiveTransaction } from '../service/matchService/getScanDataByMakerTx';
 mongooseLong(mongoose)
 
 const router = new Router({prefix: '/transaction'});
@@ -59,6 +62,18 @@ router.get('/invalidTransaction', async (ctx: Context) => {
         where.matchStatus = { $eq: 'matched' }
     } else if (state === constant.invalidTransactionState.multiMatched) {
         where.matchStatus = { $eq: 'warning' }
+    } else if (state === constant.invalidTransactionState.successByAdmin) {
+        where.confirmStatus = {
+            $eq: constant.invalidTransactionConfirmStatus.successByAdmin
+        };
+    } else if (state === constant.invalidTransactionState.autoReply) {
+        where.confirmStatus = {
+            $eq: constant.invalidTransactionConfirmStatus.autoReply
+        };
+    } else if (state === constant.invalidTransactionState.ignoreByAdmin) {
+        where.confirmStatus = {
+            $eq: constant.invalidTransactionConfirmStatus.ignoreByAdmin
+        };
     }
     if (chainId) {
         where.chainId = { $eq: Number(chainId) }
@@ -123,6 +138,12 @@ router.get('/invalidTransaction', async (ctx: Context) => {
             doc.state = constant.invalidTransactionState.matched
         } else if (doc.matchStatus === 'warning') {
             doc.state = constant.invalidTransactionState.multiMatched
+        } else if (doc.confirmStatus === constant.invalidTransactionConfirmStatus.autoReply) {
+            doc.state = constant.invalidTransactionState.autoReply
+        } else if (doc.confirmStatus === constant.invalidTransactionConfirmStatus.successByAdmin) {
+            doc.state = constant.invalidTransactionState.successByAdmin
+        } else if (doc.confirmStatus === constant.invalidTransactionConfirmStatus.ignoreByAdmin) {
+            doc.state = constant.invalidTransactionState.ignoreByAdmin
         }
     })
     ctx.body = { data: docs, pages: current, code: 0, size, total: count };
@@ -219,5 +240,75 @@ router.get('/abnormalOutTransaction', async (ctx: Context) => {
     const count = r[0]?.count || 0
     ctx.body = { data: docs, pages: current, code: 0, size, total: count };
 })
+
+
+router.post('/submit', checkLogin, async (ctx: Context) => {
+    const body: any = ctx.request.body;
+    let { txIds, hash, signature } = body;
+    const status = +body.status as constant.invalidTransactionSubmitStatus
+    const { uid, name, role } = ctx as any;
+    if (!txIds || (Array.isArray(txIds) && txIds.length < 1) || ![0,1,2,3].includes(status) || (!signature && status === 2) || (status === 1 && !hash)) {
+        ctx.body = { code: 1, msg: 'Parameter error' };
+        return;
+    }
+    if (!Array.isArray(txIds)) {
+        txIds = [txIds]
+    }
+    if (status !== 3 && txIds.length > 1) {
+        ctx.body = { code: 1, msg: 'Unable to operate Multiple transaction unless ignoreByAdmin' };
+        return
+    }
+    txIds = _.uniq(txIds)
+    const txList = await invalidTransactionModel.find({
+        id: { $in: txIds }
+    });
+    if (txList.length !== txIds.length) {
+        ctx.body = { code: 1, msg: 'Someone transactions do not exist' };
+        return;
+    }
+    for (const tx of txList) {
+        if (tx.matchStatus === 'matched') {
+            ctx.body = { code: 1, msg: 'Unable to operate a successful transaction' };
+            return;
+        }
+    }
+    let confirmStatus;
+    switch(status) {
+        case 0: confirmStatus = constant.invalidTransactionConfirmStatus.noConfirm;break;
+        case 1: confirmStatus = constant.invalidTransactionConfirmStatus.successByAdmin;break;
+        case 2: confirmStatus = constant.invalidTransactionConfirmStatus.autoReply;break; // not auto reply
+        case 3: confirmStatus = constant.invalidTransactionConfirmStatus.ignoreByAdmin;break;
+    }
+    const userLog = { uid, name, hash, updateStatus: status, role, updateTime: new Date() };
+    const updateData:any = { confirmStatus, userLog }
+    if (status === 3) {
+        updateData.signature = signature;
+    }
+    await bluebird.map(txIds, async (id) => {
+        logger.info(`submit update, id: ${id}, updateData:${JSON.stringify(updateData)}`)
+        await invalidTransactionModel.updateOne({
+            id: id,
+        }, { $set: updateData })
+    }, { concurrency: 2 });
+    ctx.body = { code: 0, msg: 'success' };
+})
+
+router.get('/userReceiveTxList', async (ctx: Context) => {
+    const result = {
+        code: 0,
+        data: [],
+      }
+      ctx.body = result
+      const { txId } = ctx.query;
+      const invalidTx = await invalidTransactionModel.findOne({ id: txId })
+      if (!invalidTx) {
+        return;
+      }
+      const time = new Date(invalidTx.timestamp).getTime();
+      let list = await getScanDataByInvalidReceiveTransaction(invalidTx, time)
+      result.data = list
+      return
+})
+
 
 export default router;
