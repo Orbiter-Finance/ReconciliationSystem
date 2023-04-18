@@ -31,7 +31,7 @@ export async function start() {
             }
             lockMap[jobConfig.name] = false
             let end = moment().format('YYYY-MM-DD HH:mm:ss')
-            logger.info(`end fetch: start:${start} end: ${end}`)
+            logger.info(`end ${jobConfig.name} : start:${start} end: ${end}`)
         })
     }
 }

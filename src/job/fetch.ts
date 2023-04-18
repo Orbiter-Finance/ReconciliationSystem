@@ -4,10 +4,11 @@ import bluebird from 'bluebird'
 import logger from '../utils/logger'
 import moment from 'moment'
 import * as constant from '../constant/index'
-import { getMatchedTxByMakerTx } from '../service/matchService/getMatchedTxByMakerTx'
+import { getMatchedTxByMakerTx, getMatchedTxByInvalidReceiveTransaction } from '../service/matchService/getMatchedTxByMakerTx'
 import invalidTransaction, { InvalidTransaction } from '../model/invalidTransaction'
 import { InvalidTransactionMysql } from '../constant/type'
 import abnormalOutTransactionModel, {AbnormalOutTransaction} from '../model/abnormalOutTransaction'
+import isMaker from '../utils/isMaker'
 const REG = new RegExp(/^(?:\d*90..|.*?90..(?:0{0,10}|$))$/)
 
 export async function startFetch() {
@@ -139,8 +140,8 @@ export async function startMatch2() {
           },
         }
       );
-      logger.info("更新 ：", findNum++);
-      logger.info("剩下没找到 ：", makerTxs.length - findNum);
+      logger.info("startMatch2 updated ：", findNum++);
+      logger.info("startMatch2 left ：", makerTxs.length - findNum);
     }
 
     if (res && res.length > 1) {
@@ -155,8 +156,8 @@ export async function startMatch2() {
           },
         }
       );
-      logger.info("更新 ：", findNum++);
-      logger.info("剩下没找到 ：", makerTxs.length - findNum);
+      logger.info("startMatch2 updated ：", findNum++);
+      logger.info("startMatch2 left ：", makerTxs.length - findNum);
     }
   }, { concurrency: 2 })
 }
@@ -176,6 +177,9 @@ export async function fetchInvalidTransaction() {
   }
   await bluebird.map(list, async (item) => {
     const hash = item.hash;
+    if (isMaker(item.from)) {
+      logger.info(`fetchInvalidTransaction: maker transfer, makerAddress:${item.from}, id:${item.id}`)
+    }
     const doc = await invalidTransaction.findOne({
       hash: hash
     })
@@ -220,49 +224,50 @@ export async function fetchAbnormalOutTransaction() {
   }, {concurrency: 3})
 }
 
-// export async function start() {
-//   // await initMongodb()
-//   let fetching = false
-//   let checking = false
-//   let matching = false
-//   setInterval(() => {
-//     if (fetching) {
-//       logger.info('fetching')
-//       return
-//     }
-//     fetching = true
-//     let start = moment().format('YYYY-MM-DD HH:mm:ss');
-//     logger.info(`start fetching at at ${moment().format('YYYY-MM-DD HH:mm:ss')}`)
-//     startFetch()
-//     .catch(error => logger.error('fetching error:',error))
-//     .finally(() => { fetching = false;logger.info(`end fetch: start:${start} end:${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
-//   }, 30 * 1000)
 
-//   setInterval(() => {
-//     if (checking) {
-//       logger.info('checking')
-//       return
-//     }
-//     let start = moment().format('YYYY-MM-DD HH:mm:ss');
-//     logger.info(`start checking at ${start}`)
-//     checking = true
-//     startCheck()
-//     .catch(error => logger.error('checking error:',error))
-//     .finally(() => { checking = false;logger.info(`end check start:${start} end:${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
-//   }, 30 * 1000)
+export async function matchInvalidReceiveTransaction() {
+  const invalidTxs = await invalidTransaction.find({
+    matchStatus: 'init',
+  })
+  logger.info('checkInvalidReceiveTransaction length:', invalidTxs.length);
+  if (!invalidTxs.length) {
+    return
+  }
+  let findNum = 0;
+  await bluebird.map(invalidTxs, async (invalidTx , index) => {
+    let res = await getMatchedTxByInvalidReceiveTransaction(invalidTx)
+    if (res && res.length === 1) {
+      const [data]: any = res;
+      await invalidTransaction.findOneAndUpdate(
+        { id: invalidTx.id },
+        {
+          $set: {
+            matchedTx: {
+              ...data,
+              hash: data.hash ? data.hash : data.tx_hash ? data.txHash : data._id,
+            },
+            matchStatus: "matched",
+          },
+        }
+      );
+      logger.info("matchInvalidReceiveTransaction updated ：", findNum++);
+      logger.info("matchInvalidReceiveTransaction left ：", invalidTxs.length - findNum);
+    }
 
-//   setInterval(() => {
-//     if (matching) {
-//       logger.info('matching')
-//       return
-//     }
-//     let start = moment().format('YYYY-MM-DD HH:mm:ss');
-//     logger.info(`start matching at ${start}`)
-//     matching = true
-//     startMatch2()
-//     .catch(error => logger.error('matching error:',error))
-//     .finally(() => { matching = false;logger.info(`end match start:${start} end: ${moment().format('YYYY-MM-DD HH:mm:ss')}`) })
-//   }, 30 * 1000)
-// }
-
-// start()
+    if (res && res.length > 1) {
+      await invalidTransaction.findOneAndUpdate(
+        { id: invalidTx.id },
+        {
+          $set: {
+            warnTxList: res.map((item) =>
+              item.hash ? item.hash : item.txHash ? item.txHash : item._id
+            ),
+            matchStatus: "warning",
+          },
+        }
+      );
+      logger.info("matchInvalidReceiveTransaction updated ：", findNum++);
+      logger.info("matchInvalidReceiveTransaction left ：", invalidTxs.length - findNum);
+    }
+  }, { concurrency: 2 })
+}

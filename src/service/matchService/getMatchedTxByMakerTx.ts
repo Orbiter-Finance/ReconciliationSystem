@@ -9,7 +9,7 @@ import getScanTxs from './txs/getScanTxs'
 import { BigNumber } from 'ethers'
 import isMaker from '../../utils/isMaker'
 import { ArbNovaTx, ScanTokenTx, ScanTx, StarknetTx, ZkSynceraTx, ZkSyncliteTx } from '../../constant/tx.types'
-
+import { InvalidTransaction} from '../../model/invalidTransaction'
 export async function getMatchedTxByMakerTx(
   makerTx: MakerTx
 ): Promise<ZkSynceraTx[] | ScanTokenTx[] | ScanTx[] | StarknetTx[] | ZkSyncliteTx[] | ArbNovaTx[] | undefined> {
@@ -93,6 +93,97 @@ export async function getMatchedTxByMakerTx(
     return txs?.filter((item) => {
       try {
         if (BigNumber.from(toAmount).eq(item.value) && isMaker(item.from)) {
+          return true
+        }
+      } catch (error) {
+        return false
+      }
+    })
+  }
+
+  return []
+}
+
+
+export async function getMatchedTxByInvalidReceiveTransaction(
+  tx: InvalidTransaction
+  ): Promise<ZkSynceraTx[] | ScanTokenTx[] | ScanTx[] | StarknetTx[] | ZkSyncliteTx[] | ArbNovaTx[] | undefined> {
+  const { replyAccount, value, symbol, tokenAddress } = tx
+  let chainId = String(tx.chainId)
+  if (!replyAccount || !isChainId(chainId) || !chainId) {
+    return undefined
+  }
+
+  if (isStarknet(chainId)) {
+
+    const txs = await getStarknetTxs(replyAccount)
+
+    return txs?.filter((item) => item?.input?.[7] === value)
+  }
+
+  if (isZksynclite(chainId)) {
+    const txs = await getZkSyncliteTxs(replyAccount)
+
+    return txs?.filter((item) => {
+      try {
+        if (BigNumber.from(value).eq(item.op.amount) && isMaker(item.op.from)) {
+          return true
+        }
+        return false
+      } catch (error) {
+        return false
+      }
+    })
+  }
+
+  if (isArbNova(chainId)) {
+    const txs = await getArbNovaScanTxs(replyAccount)
+
+    return txs?.filter((item) => {
+      try {
+        if (BigNumber.from(value).eq(item.amount) && isMaker(item.from)) {
+          return true
+        }
+      } catch (error) {
+        return false
+      }
+    })
+  }
+
+  if (isZkSyncera(chainId)) {
+    const txs = await getZkSynceraTxs(replyAccount)
+
+    return txs?.filter((item) => {
+      try {
+        if (BigNumber.from(value).eq(item.value) && isMaker(item.from)) {
+          return true
+        }
+      } catch (error) {
+        return false
+      }
+    })
+  }
+
+  if ((['DAI', 'USDC', 'USDT'].includes(symbol) || isWETHChain(chainId))) {
+    const txs = await getScanTokenTxs(replyAccount, tokenAddress, chainId)
+
+    return txs?.filter((item) => {
+      try {
+        if (BigNumber.from(value).eq(item.value) && isMaker(item.from)) {
+          return true
+        }
+      } catch (error) {
+        return false
+      }
+    })
+  }
+
+  const txs = await getScanTxs(replyAccount, chainId)
+
+  if (txs) {
+    return txs?.filter((item) => {
+      try {
+        if (BigNumber.from(value).eq(item.value) && isMaker(item.from)) {
           return true
         }
       } catch (error) {

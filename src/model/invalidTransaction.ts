@@ -42,6 +42,7 @@ export type InvalidTransaction = {
     updatedAt: Date,
 
     matchedTxHash: string,
+    warnTxList: Array<string>,
     matchedTx: Object,
     userLog: Object, // { uid name hash updateStatus role updateTime }
     matchStatus: string, // init, matched, warning
@@ -97,6 +98,7 @@ let InvalidTransaction = new Schema<InvalidTransaction>({
 
     matchedTxHash: { type: String, index: true },
     matchedTx: Object,
+    warnTxList: { type: [String], default: [] },
     userLog: Object, // { uid name hash updateStatus role updateTime }
     matchStatus: { type: String, index: true, default: 'init'}, // init, matched, warning
     signature: String,

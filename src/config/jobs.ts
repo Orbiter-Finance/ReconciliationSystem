@@ -13,5 +13,6 @@ const jobs: Job[] = [
     {name: 'startMatch2', cron: '*/30 * * * * *', enable: true },
     {name: 'fetchInvalidTransaction', cron: '*/30 * * * * *', enable: true },
     {name: 'fetchAbnormalOutTransaction', cron: '*/30 * * * * *', enable: true },
+    {name: 'matchInvalidReceiveTransaction', cron: '*/40 * * * * *', enable: true },
 ]
 export default jobs

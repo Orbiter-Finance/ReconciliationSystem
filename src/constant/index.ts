@@ -17,6 +17,13 @@ export const state = {
     doubtByAdmin: 6,
     failByAdminAndAutoReply: 7
 }
+
+export const invalidTransactionState = {
+    all: 0,
+    matched: 1,
+    noMatched: 2,
+    multiMatched: 3,
+}
 export const chainDesc = ['arbitrum', 'ethereum', 'optimism', 'starknet', 'zksyncera', 'zksynclite','polygon','metis','boba','bsc']
 
 export const decimalMap = {

@@ -5,6 +5,7 @@ import bodyParser from 'koa-bodyparser'
 import router from './controller/list'
 import userRouter from './controller/user'
 import staticDir from 'koa-static'
+import transactionRouter from './controller/transaction'
 import { node_env } from './config/index' 
 import logger from './utils/logger'
 import * as job from './job'
@@ -48,7 +49,7 @@ app.use(async (ctx, next) => {
 
 app.use(router.routes())
 app.use(userRouter.routes())
-
+app.use(transactionRouter.routes())
 initMongodb().then(() => {
     logger.info('----', node_env.isDev, node_env.isProd)
     if (node_env.isDev || node_env.isProd) {
