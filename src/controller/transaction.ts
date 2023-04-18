@@ -21,8 +21,7 @@ router.get('/invalidTransaction', async (ctx: Context) => {
         endTime: end,
         state = 0,
         key,
-        fromChainId,
-        toChainId,
+        chainId,
         minAmount,
         maxAmount,
         symbol = ''
@@ -61,11 +60,8 @@ router.get('/invalidTransaction', async (ctx: Context) => {
     } else if (state === constant.invalidTransactionState.multiMatched) {
         where.matchStatus = { $eq: 'warning' }
     }
-    if (toChainId) {
-        where.toChain = { $eq: toChainId }
-    }
-    if (fromChainId) {
-        where.fromChain = { $eq: fromChainId }
+    if (chainId) {
+        where.chainId = { $eq: Number(chainId) }
     }
     if (symbol) {
         where['symbol'] = { $eq: symbol }
@@ -119,8 +115,15 @@ router.get('/invalidTransaction', async (ctx: Context) => {
         },
     ])
     const count = r[0]?.count || 0
-    await bluebird.map(docs, async (doc: InvalidTransaction & { value2: string }) => {
+    await bluebird.map(docs, async (doc: InvalidTransaction & { value2: string, state: number }) => {
         doc.value2 = ethers.utils.formatUnits(doc.value, constant.decimalMap[doc.symbol]).toString()
+        if (doc.matchStatus === 'init') {
+            doc.state = constant.invalidTransactionState.noMatched
+        } else if (doc.matchStatus === 'matched') {
+            doc.state = constant.invalidTransactionState.matched
+        } else if (doc.matchStatus === 'warning') {
+            doc.state = constant.invalidTransactionState.multiMatched
+        }
     })
     ctx.body = { data: docs, pages: current, code: 0, size, total: count };
     return
@@ -134,8 +137,7 @@ router.get('/abnormalOutTransaction', async (ctx: Context) => {
         startTime: start,
         endTime: end,
         key,
-        fromChainId,
-        toChainId,
+        chainId,
         minAmount,
         maxAmount,
         symbol
@@ -165,11 +167,8 @@ router.get('/abnormalOutTransaction', async (ctx: Context) => {
           ]
         }
     }
-    if (toChainId) {
-        where.toChain = { $eq: toChainId }
-    }
-    if (fromChainId) {
-        where.fromChain = { $eq: fromChainId }
+    if (chainId) {
+        where.chainId = { $eq: Number(chainId) }
     }
     if (symbol) {
         where['symbol'] = { $eq: symbol }
