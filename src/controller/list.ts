@@ -135,14 +135,14 @@ router.get("/newlist", async (ctx) => {
     where['inData.extra.toSymbol'] = { $eq: symbol }
     if (minAmount) {
       minAmount = ethers.utils.parseUnits(String(minAmount), constant.decimalMap[symbol]).toString()
-      where.numberToAmount = { $gte: mongoose.Types.Long.fromString(minAmount) }
+      where.numberToAmount = { $gte: mongoose.Types.Decimal128.fromString(minAmount) }
     } 
     if (maxAmount) {
       maxAmount = ethers.utils.parseUnits(String(maxAmount), constant.decimalMap[symbol]).toString()
       if (!minAmount) {
-        where.numberToAmount = { $lte: mongoose.Types.Long.fromString(maxAmount) }
+        where.numberToAmount = { $lte: mongoose.Types.Decimal128.fromString(maxAmount) }
       } else {
-        where.numberToAmount = { ...where.numberToAmount, $lte: mongoose.Types.Long.fromString(maxAmount) }
+        where.numberToAmount = { ...where.numberToAmount, $lte: mongoose.Types.Decimal128.fromString(maxAmount) }
       }
     }
   }
@@ -150,7 +150,7 @@ router.get("/newlist", async (ctx) => {
   logger.info(JSON.stringify(where));
   const aggregate = [
     {
-      "$addFields": { "numberToAmount": { $convert: { input: "$toAmount", "to":"long", "onError": 0 } } }
+      "$addFields": { "numberToAmount": { $convert: { input: "$toAmount", "to":"decimal", "onError": 0 } } }
     },
     {
       $match: where
@@ -204,7 +204,7 @@ router.get("/newlist", async (ctx) => {
 
       doc.createdAt = getFormatDate(doc.createdAt);
       doc.updatedAt = getFormatDate(doc.updatedAt);
-
+      // doc.value2 = ethers.utils.formatUnits(doc.toAmount, constant.decimalMap[doc.symbol]).toString()
       // find user tx
 
       // const inId = doc.inId;
@@ -355,7 +355,7 @@ router.get("/statistic", async (ctx) => {
       $match: failByUnknownCountWhere
     },
     {
-      $addFields: { "numberToAmount": { $convert: { input: "$toAmount", "to":"long", "onError": 0 } } }
+      $addFields: { "numberToAmount": { $convert: { input: "$toAmount", "to":"decimal", "onError": 0 } } }
     },
     {
         $group: { _id : "$inData.extra.toSymbol", "count2":{"$sum": "$numberToAmount"} }

@@ -80,29 +80,24 @@ router.get('/invalidTransaction', async (ctx: Context) => {
         where['symbol'] = { $eq: symbol }
     }
     if (constant.decimalMap[symbol] && (minAmount || maxAmount)) {
-        where['symbol'] = { $eq: symbol }
-        if (minAmount) {
-          minAmount = ethers.utils.parseUnits(String(minAmount), constant.decimalMap[symbol]).toString()
-          where.numberToAmount = { $gte: mongoose.Types.Long.fromString(minAmount) }
-        //   where.value = { $gte: minAmount }
-        } 
-        if (maxAmount) {
-          maxAmount = ethers.utils.parseUnits(String(maxAmount), constant.decimalMap[symbol]).toString()
-          if (!minAmount) {
-            where.numberToAmount = { $lte: mongoose.Types.Long.fromString(maxAmount) }
-            // where.value = { lte: maxAmount }
-          } else {
-            where.numberToAmount = { ...where.numberToAmount, $lte: mongoose.Types.Long.fromString(maxAmount) }
-            // where.value = { ...where.value, $lte: maxAmount }
-
-          }
+      where['symbol'] = { $eq: symbol }
+      if (minAmount) {
+        minAmount = ethers.utils.parseUnits(String(minAmount), constant.decimalMap[symbol]).toString()
+        where.numberToAmount = { $gte: mongoose.Types.Decimal128.fromString(minAmount) }
+      } 
+      if (maxAmount) {
+        maxAmount = ethers.utils.parseUnits(String(maxAmount), constant.decimalMap[symbol]).toString()
+        if (!minAmount) {
+          where.numberToAmount = { $lte: mongoose.Types.Decimal128.fromString(maxAmount) }
+        } else {
+          where.numberToAmount = { ...where.numberToAmount, $lte: mongoose.Types.Decimal128.fromString(maxAmount) }
         }
+      }
     }
-
     logger.info(JSON.stringify(where));
     const aggregate = [
         {
-          "$addFields": { "numberToAmount": { $convert: { input: "$value", "to":"long", "onError": 0 } } }
+          "$addFields": { "numberToAmount": { $convert: { input: "$value", "to":"decimal", "onError": 0 } } }
         },
         {
           $match: where
@@ -193,25 +188,24 @@ router.get('/abnormalOutTransaction', async (ctx: Context) => {
         where['symbol'] = { $eq: symbol }
     }
     if (constant.decimalMap[symbol] && (minAmount || maxAmount)) {
-        where['symbol'] = { $eq: symbol }
-        if (minAmount) {
-          minAmount = ethers.utils.parseUnits(String(minAmount), constant.decimalMap[symbol]).toString()
-          where.numberToAmount = { $gte: mongoose.Types.Long.fromString(minAmount) }
-        } 
-        if (maxAmount) {
-          maxAmount = ethers.utils.parseUnits(String(maxAmount), constant.decimalMap[symbol]).toString()
-          if (!minAmount) {
-            where.numberToAmount = { $lte: mongoose.Types.Long.fromString(maxAmount) }
-          } else {
-            where.numberToAmount = { ...where.numberToAmount, $lte: mongoose.Types.Long.fromString(maxAmount) }
-          }
+      where['symbol'] = { $eq: symbol }
+      if (minAmount) {
+        minAmount = ethers.utils.parseUnits(String(minAmount), constant.decimalMap[symbol]).toString()
+        where.numberToAmount = { $gte: mongoose.Types.Decimal128.fromString(minAmount) }
+      } 
+      if (maxAmount) {
+        maxAmount = ethers.utils.parseUnits(String(maxAmount), constant.decimalMap[symbol]).toString()
+        if (!minAmount) {
+          where.numberToAmount = { $lte: mongoose.Types.Decimal128.fromString(maxAmount) }
+        } else {
+          where.numberToAmount = { ...where.numberToAmount, $lte: mongoose.Types.Decimal128.fromString(maxAmount) }
         }
+      }
     }
-
     logger.info(JSON.stringify(where));
     const aggregate = [
         {
-          "$addFields": { "numberToAmount": { $convert: { input: "$value", "to":"long", "onError": 0 } } }
+          "$addFields": { "numberToAmount": { $convert: { input: "$value", "to":"$decimal", "onError": 0 } } }
         },
         {
           $match: where
