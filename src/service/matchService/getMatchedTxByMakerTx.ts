@@ -7,7 +7,7 @@ import getZkSynceraTxs from './txs/getZkSynceraTxs'
 import getScanTokenTxs from './txs/getScanTokenTxs'
 import getScanTxs from './txs/getScanTxs'
 import { BigNumber } from 'ethers'
-import isMaker from '../../utils/isMaker'
+import isMaker, { isMaker2 } from '../../utils/isMaker'
 import { ArbNovaTx, ScanTokenTx, ScanTx, StarknetTx, ZkSynceraTx, ZkSyncliteTx } from '../../constant/tx.types'
 import { InvalidTransaction} from '../../model/invalidTransaction'
 export async function getMatchedTxByMakerTx(
@@ -126,7 +126,7 @@ export async function getMatchedTxByInvalidReceiveTransaction(
 
     return txs?.filter((item) => {
       try {
-        if (BigNumber.from(value).eq(item.op.amount) && isMaker(item.op.from)) {
+        if (BigNumber.from(value).eq(item.op.amount) && isMaker2(item.op.from)) {
           return true
         }
         return false
@@ -141,7 +141,7 @@ export async function getMatchedTxByInvalidReceiveTransaction(
 
     return txs?.filter((item) => {
       try {
-        if (BigNumber.from(value).eq(item.amount) && isMaker(item.from)) {
+        if (BigNumber.from(value).eq(item.amount) && isMaker2(item.from)) {
           return true
         }
       } catch (error) {
@@ -155,7 +155,7 @@ export async function getMatchedTxByInvalidReceiveTransaction(
 
     return txs?.filter((item) => {
       try {
-        if (BigNumber.from(value).eq(item.value) && isMaker(item.from)) {
+        if (BigNumber.from(value).eq(item.value) && isMaker2(item.from)) {
           return true
         }
       } catch (error) {
@@ -169,7 +169,7 @@ export async function getMatchedTxByInvalidReceiveTransaction(
 
     return txs?.filter((item) => {
       try {
-        if (BigNumber.from(value).eq(item.value) && isMaker(item.from)) {
+        if (BigNumber.from(value).eq(item.value) && isMaker2(item.from)) {
           return true
         }
       } catch (error) {
@@ -183,7 +183,7 @@ export async function getMatchedTxByInvalidReceiveTransaction(
   if (txs) {
     return txs?.filter((item) => {
       try {
-        if (BigNumber.from(value).eq(item.value) && isMaker(item.from)) {
+        if (BigNumber.from(value).eq(item.value) && isMaker2(item.from)) {
           return true
         }
       } catch (error) {

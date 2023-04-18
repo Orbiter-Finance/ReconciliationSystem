@@ -10,10 +10,17 @@ const makers = [
   "0x6e18dd81378fd5240704204bccc546f6dfad3d08c4a3a44347bd274659ff328".toLowerCase(), // Starknet
   "0x7b393627BD514d2AA4C83E9f0C468939df15ea3c29980CD8E7be3Ec847795F0".toLowerCase(), // Starknet ETH 1 
   "0x64A24243F2Aabae8D2148FA878276e6E6E452E3941b417f3c33b1649EA83e11".toLowerCase(), // Starknet ETH 2 
-  "0x411c2a2A4Dc7b4d3a33424Af3eDE7E2E3b66691E22632803E37E2e0de450940".toLowerCase(), // Starknet DAI
+  "0x411c2a2A4Dc7b4d3a33424Af3eDE7E2E3b66691E22632803E37E2e0de450940".toLowerCase() // Starknet DAI
 ];
+
+const makers2 = [
+    '0x646592183ff25A0c44f09896A384004778F831ED'.toLowerCase()
+]
+export function isMaker2(address: string) {
+    return makers2.some((maker) => isEqualsAddress(maker, address));
+}
 
 export default function isMaker(address: string) {
     return makers.some((maker) => isEqualsAddress(maker, address));
-  };
+};
   
