@@ -5,7 +5,6 @@ import abnormalOutTransactionModel, {AbnormalOutTransaction} from '../model/abno
 import invalidTransactionModel, {InvalidTransaction} from '../model/invalidTransaction'
 import * as constant from '../constant/index'
 import {ethers} from 'ethers'
-import mongooseLong from 'mongoose-long'
 import mongoose from 'mongoose'
 import logger from '../utils/logger'
 import checkLogin from '../middleware/checkLogin'
