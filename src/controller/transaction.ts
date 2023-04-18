@@ -205,7 +205,7 @@ router.get('/abnormalOutTransaction', async (ctx: Context) => {
     logger.info(JSON.stringify(where));
     const aggregate = [
         {
-          "$addFields": { "numberToAmount": { $convert: { input: "$value", "to":"$decimal", "onError": 0 } } }
+          "$addFields": { "numberToAmount": { $convert: { input: "$value", "to":"decimal", "onError": 0 } } }
         },
         {
           $match: where
