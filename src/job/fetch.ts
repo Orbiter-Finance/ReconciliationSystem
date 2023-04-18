@@ -286,7 +286,7 @@ export async function checkAbnormalOutTransaction() {
         logger.info(`checkAbnormalOutTransaction delete id:${doc.id}`)
         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
       } 
-    });
+    }, { concurrency: 10 });
     if (docs.length && docs.length === pageSize) {
       where.id = { $lt: docs[docs.length - 1].id }
     } else {
