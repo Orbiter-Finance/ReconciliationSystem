@@ -11,7 +11,6 @@ import logger from '../utils/logger'
 import checkLogin from '../middleware/checkLogin'
 import _ from 'lodash'
 import { getScanDataByInvalidReceiveTransaction } from '../service/matchService/getScanDataByMakerTx';
-mongooseLong(mongoose)
 
 const router = new Router({prefix: '/transaction'});
 
