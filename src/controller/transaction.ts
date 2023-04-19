@@ -59,6 +59,9 @@ router.get('/invalidTransaction', async (ctx: Context) => {
         where.confirmStatus = { $eq: 'noConfirm' }
     } else if (state === constant.invalidTransactionState.matched) {
         where.matchStatus = { $eq: 'matched' }
+    } else if (state === constant.invalidTransactionState.replyByAdmin) {
+      where.matchStatus = { $eq: 'init' }
+      where.confirmStatus = { $eq: constant.invalidTransactionState.replyByAdmin }
     } else if (state === constant.invalidTransactionState.multiMatched) {
         where.matchStatus = { $eq: 'warning' }
     } else if (state === constant.invalidTransactionState.successByAdmin) {
@@ -141,6 +144,8 @@ router.get('/invalidTransaction', async (ctx: Context) => {
             doc.state = constant.invalidTransactionState.successByAdmin
         } else if (doc.confirmStatus === constant.invalidTransactionConfirmStatus.ignoreByAdmin) {
             doc.state = constant.invalidTransactionState.ignoreByAdmin
+        } else if (doc.confirmStatus === constant.invalidTransactionConfirmStatus.replyByAdmin) {
+            doc.state = constant.invalidTransactionState.replyByAdmin
         }
     })
     ctx.body = { data: docs, pages: current, code: 0, size, total: count };
@@ -243,15 +248,15 @@ router.post('/submit', checkLogin, async (ctx: Context) => {
     let { txIds, hash, signature } = body;
     const status = +body.status as constant.invalidTransactionSubmitStatus
     const { uid, name, role } = ctx as any;
-    if (!txIds || (Array.isArray(txIds) && txIds.length < 1) || ![0,1,2,3].includes(status) || (!signature && status === 2) || (status === 1 && !hash)) {
+    if (!txIds || (Array.isArray(txIds) && txIds.length < 1) || ![0,1,2,3,4].includes(status) || (!signature && status === 2) || (status === 1 && !hash)) {
         ctx.body = { code: 1, msg: 'Parameter error' };
         return;
     }
     if (!Array.isArray(txIds)) {
         txIds = [txIds]
     }
-    if (status !== 3 && txIds.length > 1) {
-        ctx.body = { code: 1, msg: 'Unable to operate Multiple transaction unless ignoreByAdmin' };
+    if (![3,4].includes(status) && txIds.length > 1) {
+        ctx.body = { code: 1, msg: 'Unable to operate Multiple transaction unless ignoreByAdmin or replyByAdmin' };
         return
     }
     txIds = _.uniq(txIds)
@@ -277,7 +282,7 @@ router.post('/submit', checkLogin, async (ctx: Context) => {
     }
     const userLog = { uid, name, hash, updateStatus: status, role, updateTime: new Date() };
     const updateData:any = { confirmStatus, userLog }
-    if (status === 3) {
+    if (status === 2) {
         updateData.signature = signature;
     }
     await bluebird.map(txIds, async (id) => {

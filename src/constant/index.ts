@@ -25,12 +25,14 @@ export const invalidTransactionState = {
     multiMatched: 3,
     successByAdmin: 4,
     autoReply: 5,
-    ignoreByAdmin: 6
+    ignoreByAdmin: 6,
+    replyByAdmin: 7,
 }
 
 export const invalidTransactionConfirmStatus = {
     noConfirm: 'noConfirm',
     successByAdmin: 'successByAdmin',
+    replyByAdmin: 'replyByAdmin',
     autoReply: 'autoReply',
     ignoreByAdmin: 'ignoreByAdmin',
 }
@@ -39,7 +41,8 @@ export enum invalidTransactionSubmitStatus {
     noConfirm = 0,
     successByAdmin = 1,
     autoReply = 2,
-    ignoreByAdmin = 3
+    ignoreByAdmin = 3,
+    replyByAdmin = 4,
 }
 export const chainDesc = ['arbitrum', 'ethereum', 'optimism', 'starknet', 'zksyncera', 'zksynclite','polygon','metis','boba','bsc']
 
