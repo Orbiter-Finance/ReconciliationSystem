@@ -8,7 +8,7 @@ import { getMatchedTxByMakerTx, getMatchedTxByInvalidReceiveTransaction } from '
 import invalidTransaction, { InvalidTransaction } from '../model/invalidTransaction'
 import { InvalidTransactionMysql } from '../constant/type'
 import abnormalOutTransactionModel, {AbnormalOutTransaction} from '../model/abnormalOutTransaction'
-import isMaker from '../utils/isMaker'
+import isMaker, { IsIgnoreAddress } from '../utils/isMaker'
 const REG = new RegExp(/^(?:\d*90..|.*?90..(?:0{0,10}|$))$/)
 
 export async function startFetch() {
@@ -177,7 +177,7 @@ export async function fetchInvalidTransaction() {
   }
   await bluebird.map(list, async (item) => {
     const hash = item.hash;
-    if (isMaker(item.from)) {
+    if (IsIgnoreAddress(item.from)) {
       logger.info(`fetchInvalidTransaction: maker transfer, makerAddress:${item.from}, id:${item.id}`)
     }
     const doc = await invalidTransaction.findOne({
