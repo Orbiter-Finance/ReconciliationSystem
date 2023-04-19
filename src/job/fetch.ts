@@ -165,7 +165,7 @@ export async function startMatch2() {
 
 export async function fetchInvalidTransaction() {
   const maxIdDoc = await invalidTransaction.find({}).sort({ id: -1 }).limit(1);
-  let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-04-13' AND side = 0 AND memo = 0`
+  let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-04-13' AND side = 0 AND memo = 0 AND \`value\` != '0'`
   if (maxIdDoc && maxIdDoc.length) {
     sql = `${sql} AND id > ${maxIdDoc[0].id}`;
   }
@@ -290,7 +290,7 @@ export async function checkAbnormalOutTransaction() {
         logger.info(`checkAbnormalOutTransaction delete id:${doc.id}`)
         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
       } 
-    }, { concurrency: 10 });
+    }, { concurrency: 3 });
     if (docs.length && docs.length === pageSize) {
       where.id = { $lt: docs[docs.length - 1].id }
     } else {
