@@ -279,6 +279,7 @@ router.post('/submit', checkLogin, async (ctx: Context) => {
         case 1: confirmStatus = constant.invalidTransactionConfirmStatus.successByAdmin;break;
         case 2: confirmStatus = constant.invalidTransactionConfirmStatus.autoReply;break; // not auto reply
         case 3: confirmStatus = constant.invalidTransactionConfirmStatus.ignoreByAdmin;break;
+        case 4: confirmStatus = constant.invalidTransactionConfirmStatus.replyByAdmin;break;
     }
     const userLog = { uid, name, hash, updateStatus: status, role, updateTime: new Date() };
     const updateData:any = { confirmStatus, userLog }
