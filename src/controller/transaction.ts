@@ -56,19 +56,23 @@ router.get('/invalidTransaction', async (ctx: Context) => {
 
     if (state === constant.invalidTransactionState.noMatched) {
         where.matchStatus = { $eq: 'init' }
+        where.confirmStatus = { $eq: 'noConfirm' }
     } else if (state === constant.invalidTransactionState.matched) {
         where.matchStatus = { $eq: 'matched' }
     } else if (state === constant.invalidTransactionState.multiMatched) {
         where.matchStatus = { $eq: 'warning' }
     } else if (state === constant.invalidTransactionState.successByAdmin) {
+        where.matchStatus = { $nin: ['matched', 'warning'] }
         where.confirmStatus = {
             $eq: constant.invalidTransactionConfirmStatus.successByAdmin
         };
     } else if (state === constant.invalidTransactionState.autoReply) {
+        where.matchStatus = { $nin: ['matched', 'warning'] }
         where.confirmStatus = {
             $eq: constant.invalidTransactionConfirmStatus.autoReply
         };
     } else if (state === constant.invalidTransactionState.ignoreByAdmin) {
+        where.matchStatus = { $nin: ['matched', 'warning'] }
         where.confirmStatus = {
             $eq: constant.invalidTransactionConfirmStatus.ignoreByAdmin
         };
@@ -125,7 +129,7 @@ router.get('/invalidTransaction', async (ctx: Context) => {
     const count = r[0]?.count || 0
     await bluebird.map(docs, async (doc: InvalidTransaction & { value2: string, state: number }) => {
         doc.value2 = ethers.utils.formatUnits(doc.value, constant.decimalMap[doc.symbol]).toString()
-        if (doc.matchStatus === 'init') {
+        if (doc.matchStatus === 'init' && doc.confirmStatus === constant.invalidTransactionConfirmStatus.noConfirm) {
             doc.state = constant.invalidTransactionState.noMatched
         } else if (doc.matchStatus === 'matched') {
             doc.state = constant.invalidTransactionState.matched
