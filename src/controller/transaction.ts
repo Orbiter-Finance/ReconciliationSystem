@@ -175,7 +175,7 @@ router.post('/abnormalOutTransaction', async (ctx: Context) => {
         chainId,
         minAmount,
         maxAmount,
-        symbol,
+        symbol = '',
         filterAddressList
     } = param
     if (filterAddressList && !Array.isArray(filterAddressList)) {
@@ -190,7 +190,7 @@ router.post('/abnormalOutTransaction', async (ctx: Context) => {
     }
     const skip = (current - 1) * size;
     const where: any = {};
-    if (filterAddressList.length > 0) {
+    if (filterAddressList && filterAddressList.length > 0) {
       where.$and = [
         { to: { $nin: filterAddressList } }
       ]
