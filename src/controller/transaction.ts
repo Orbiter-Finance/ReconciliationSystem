@@ -13,8 +13,8 @@ import { getScanDataByInvalidReceiveTransaction } from '../service/matchService/
 
 const router = new Router({prefix: '/transaction'});
 
-router.get('/invalidTransaction', async (ctx: Context) => {
-    const param = ctx.query;
+router.post('/invalidTransaction', async (ctx: Context) => {
+    const param = ctx.request.body as any;
     let {
         current = 1,
         size = 10,
@@ -25,8 +25,16 @@ router.get('/invalidTransaction', async (ctx: Context) => {
         chainId,
         minAmount,
         maxAmount,
-        symbol = ''
+        symbol = '',
+        filterAddressList
     } = param
+    if (!filterAddressList) {
+      filterAddressList = []
+    }
+    if (filterAddressList && !Array.isArray(filterAddressList)) {
+      ctx.body = { code: 1, msg: 'Parameter error' };
+      return
+    }
     state = Number(state);
     size = Number(size)
     current = Number(current);
@@ -36,6 +44,11 @@ router.get('/invalidTransaction', async (ctx: Context) => {
     }
     const skip = (current - 1) * size;
     const where: any = {};
+    if (filterAddressList.length > 0) {
+      where.$and = [
+        { from: { $nin: filterAddressList } }
+      ]
+    }
     if (start && end) {
         where['timestamp'] = {
           $gt: new Date(Number(start)),
@@ -110,7 +123,6 @@ router.get('/invalidTransaction', async (ctx: Context) => {
           $match: where
         },
     ]
-    console.log(JSON.stringify(aggregate, undefined, '\t'))
     const docs = await invalidTransactionModel.aggregate([
         ...aggregate,
         {
@@ -152,8 +164,8 @@ router.get('/invalidTransaction', async (ctx: Context) => {
     return
 })
 
-router.get('/abnormalOutTransaction', async (ctx: Context) => {
-    const param = ctx.query;
+router.post('/abnormalOutTransaction', async (ctx: Context) => {
+    const param = ctx.request.body as any;
     let {
         current = 1,
         size = 10,
@@ -163,8 +175,13 @@ router.get('/abnormalOutTransaction', async (ctx: Context) => {
         chainId,
         minAmount,
         maxAmount,
-        symbol
+        symbol,
+        filterAddressList
     } = param
+    if (filterAddressList && !Array.isArray(filterAddressList)) {
+      ctx.body = { code: 1, msg: 'Parameter error' };
+      return
+    }
     size = Number(size)
     current = Number(current);
     symbol = String(symbol);
@@ -173,6 +190,11 @@ router.get('/abnormalOutTransaction', async (ctx: Context) => {
     }
     const skip = (current - 1) * size;
     const where: any = {};
+    if (filterAddressList.length > 0) {
+      where.$and = [
+        { to: { $nin: filterAddressList } }
+      ]
+    }
     if (start && end) {
         where['timestamp'] = {
           $gt: new Date(Number(start)),
