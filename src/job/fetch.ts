@@ -208,6 +208,10 @@ export async function fetchAbnormalOutTransaction() {
   const list = result[0] as AbnormalOutTransaction[]
   logger.info(`fetchAbnormalOutTransaction sql: ${sql} , length:${list.length}`)
   await bluebird.map(list, async (item) => {
+    if (isMaker(item.to)) {
+      logger.info(`fetchAbnormalOutTransaction: to maker: ${item.to}, id: ${item.id}`)
+      return;
+    }
     const hash = item.hash;
     const doc = await abnormalOutTransactionModel.findOne({
       hash: hash
