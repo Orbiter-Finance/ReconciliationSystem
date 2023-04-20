@@ -140,7 +140,7 @@ export async function startMatch2() {
           $set: {
             matchedScanTx: {
               ...data,
-              hash: data.hash ? data.hash : data.tx_hash ? data.txHash : data._id,
+              hash: data.hash ? data.hash : data.txHash ? data.txHash : data._id,
             },
             status: "matched",
           },
@@ -255,7 +255,7 @@ export async function matchInvalidReceiveTransaction() {
           $set: {
             matchedTx: {
               ...data,
-              hash: data.hash ? data.hash : data.tx_hash ? data.txHash : data._id,
+              hash: data.hash ? data.hash : data.txHash ? data.txHash : data._id,
             },
             matchStatus: "matched",
           },
@@ -297,7 +297,7 @@ export async function checkAbnormalOutTransaction() {
         logger.info(`checkAbnormalOutTransaction delete by status=99, id:${doc.id}`)
         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
       }
-      const matchedTx = await invalidTransaction.findOne({ matchedTxHash: doc.hash, chainId: Number(doc.chainId) })
+      const matchedTx = await invalidTransaction.findOne({ 'matchedTx.hash': doc.hash, chainId: Number(doc.chainId) })
       if (matchedTx) {
         logger.info(`checkAbnormalOutTransaction delete by return tx:${matchedTx.matchedTxHash}, id:${doc.id}`)
         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
