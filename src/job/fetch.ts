@@ -299,7 +299,7 @@ export async function checkAbnormalOutTransaction() {
       }
       const matchedTx = await invalidTransaction.findOne({ 'matchedTx.hash': doc.hash, chainId: Number(doc.chainId) })
       if (matchedTx) {
-        logger.info(`checkAbnormalOutTransaction delete by return tx:${matchedTx.matchedTxHash}, id:${doc.id}`)
+        logger.info(`checkAbnormalOutTransaction delete by return tx:${doc.hash}, id:${doc.id}`)
         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
       }
     }, { concurrency: 3 });
