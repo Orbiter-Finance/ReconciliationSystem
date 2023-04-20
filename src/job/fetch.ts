@@ -11,12 +11,18 @@ import abnormalOutTransactionModel, {AbnormalOutTransaction} from '../model/abno
 import isMaker, { IsIgnoreAddress } from '../utils/isMaker'
 const REG = new RegExp(/^(?:\d*90..|.*?90..(?:0{0,10}|$))$/)
 
+let first = true;
 export async function startFetch() {
   const start = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
-  const maxIdDoc = await makerTxModel.find({}).sort({ id: -1 }).limit(1);
+  const concurrency = 10;
+  // To avoid missing data, the offset needs to be the same as the amount of insert concurrency 
+  const maxIdDoc = await makerTxModel.find({}).sort({ id: -1 }).limit(concurrency);
   let sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND toAmount != 'null' AND toAmount != 'undefined' AND createdAt <= '${start}' AND createdAt >= '20230316'`
-  if (maxIdDoc && maxIdDoc.length) {
-    sql = `${sql} AND id > ${maxIdDoc[0].id}`
+  if (first) {
+    sql = `${sql} AND id > 12056920`
+    first = false
+  } else if (maxIdDoc && maxIdDoc.length) {
+    sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`
   }
   let [list] : any = await pool.query(sql)
   logger.info(`fetch sql ${sql}, length:`, list.length)
@@ -57,7 +63,7 @@ export async function startFetch() {
       } catch (error) {
         logger.info(error)
       }
-    }, { concurrency: 10 })
+    }, { concurrency: concurrency })
   } catch (error) {
     logger.error(`fetch error`, error)
   }
@@ -165,10 +171,10 @@ export async function startMatch2() {
 
 export async function fetchInvalidTransaction() {
   const maxIdDoc = await invalidTransaction.find({}).sort({ id: -1 }).limit(1);
-  let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-04-13' AND side = 0 AND memo = 0 AND \`value\` != '0'`
-  if (maxIdDoc && maxIdDoc.length) {
-    sql = `${sql} AND id > ${maxIdDoc[0].id}`;
-  }
+  let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-04-13' AND side = 0 AND \`value\` != '0'`
+  // if (maxIdDoc && maxIdDoc.length) {
+  //   sql = `${sql} AND id > ${maxIdDoc[0].id}`;
+  // }
   let result = await pool.query(sql)
   const list = result[0] as InvalidTransactionMysql[]
   logger.info(`fetchInvalidTransaction sql: ${sql} , length:${list.length}`)
