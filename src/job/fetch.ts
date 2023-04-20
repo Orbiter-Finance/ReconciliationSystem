@@ -223,9 +223,13 @@ export async function fetchAbnormalOutTransaction() {
     const doc = await abnormalOutTransactionModel.findOne({
       hash: hash
     })
-
     const insertData = item
     if (doc) {
+      return
+    }
+    const matchedTx = await invalidTransaction.findOne({ 'matchedTx.hash': hash, chainId: Number(item.chainId) })
+    if (matchedTx) {
+      logger.info(`fetchAbnormalOutTransaction ignore  return tx:${item.hash}, id:${item.id}`)
       return
     }
     insertData.timestamp = new Date(item.timestamp)
