@@ -11,7 +11,7 @@ import abnormalOutTransactionModel, {AbnormalOutTransaction} from '../model/abno
 import isMaker, { IsIgnoreAddress } from '../utils/isMaker'
 const REG = new RegExp(/^(?:\d*90..|.*?90..(?:0{0,10}|$))$/)
 
-let first = true;
+let first = false;
 export async function startFetch() {
   const start = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
   const concurrency = 10;
@@ -170,11 +170,12 @@ export async function startMatch2() {
 
 
 export async function fetchInvalidTransaction() {
-  const maxIdDoc = await invalidTransaction.find({}).sort({ id: -1 }).limit(1);
+  const concurrency = 3
+  const maxIdDoc = await invalidTransaction.find({}).sort({ id: -1 }).limit(concurrency);
   let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-04-13' AND side = 0 AND \`value\` != '0'`
-  // if (maxIdDoc && maxIdDoc.length) {
-  //   sql = `${sql} AND id > ${maxIdDoc[0].id}`;
-  // }
+  if (maxIdDoc && maxIdDoc.length) {
+    sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length].id}`;
+  }
   let result = await pool.query(sql)
   const list = result[0] as InvalidTransactionMysql[]
   logger.info(`fetchInvalidTransaction sql: ${sql} , length:${list.length}`)
@@ -198,16 +199,17 @@ export async function fetchInvalidTransaction() {
     insertData.createdAt = new Date(item.createdAt)
     insertData.updatedAt = new Date(item.updatedAt)
     await invalidTransaction.create(insertData)
-  }, {concurrency: 3})
+  }, {concurrency: concurrency})
 }
 
 
 export async function fetchAbnormalOutTransaction() {
+  const concurrency = 3
   const end = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
   let sql = `SELECT * FROM transaction WHERE \`status\` !=99 AND \`timestamp\` > '2023-03-15' AND \`timestamp\` < '${end}' AND side = 1`;
-  const maxIdDoc = await abnormalOutTransactionModel.find({}).sort({ id: -1 }).limit(1);
+  const maxIdDoc = await abnormalOutTransactionModel.find({}).sort({ id: -1 }).limit(concurrency);
   if (maxIdDoc && maxIdDoc.length) {
-    sql = `${sql} AND id > ${maxIdDoc[0].id}`;
+    sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length].id}`;
   }
   console.log(sql)
   let result = await pool.query(sql)
@@ -231,7 +233,7 @@ export async function fetchAbnormalOutTransaction() {
     insertData.createdAt = new Date(item.createdAt)
     insertData.updatedAt = new Date(item.updatedAt)
     await abnormalOutTransactionModel.create(insertData)
-  }, {concurrency: 3})
+  }, {concurrency: concurrency})
 }
 
 
