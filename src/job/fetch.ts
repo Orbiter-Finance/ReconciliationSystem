@@ -174,7 +174,7 @@ export async function fetchInvalidTransaction() {
   const maxIdDoc = await invalidTransaction.find({}).sort({ id: -1 }).limit(concurrency);
   let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-04-13' AND side = 0 AND \`value\` != '0'`
   if (maxIdDoc && maxIdDoc.length) {
-    sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length].id}`;
+    sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
   }
   let result = await pool.query(sql)
   const list = result[0] as InvalidTransactionMysql[]
@@ -209,7 +209,7 @@ export async function fetchAbnormalOutTransaction() {
   let sql = `SELECT * FROM transaction WHERE \`status\` !=99 AND \`timestamp\` > '2023-03-15' AND \`timestamp\` < '${end}' AND side = 1`;
   const maxIdDoc = await abnormalOutTransactionModel.find({}).sort({ id: -1 }).limit(concurrency);
   if (maxIdDoc && maxIdDoc.length) {
-    sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length].id}`;
+    sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
   }
   console.log(sql)
   let result = await pool.query(sql)
