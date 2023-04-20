@@ -287,9 +287,14 @@ export async function checkAbnormalOutTransaction() {
       let result = await pool.query(sql)
       const list = result[0] as InvalidTransactionMysql[]
       if (list.length) {
-        logger.info(`checkAbnormalOutTransaction delete id:${doc.id}`)
+        logger.info(`checkAbnormalOutTransaction delete by status=99, id:${doc.id}`)
         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
-      } 
+      }
+      const matchedTx = invalidTransaction.findOne({ matchedTxHash: doc.hash, chainId: Number(doc.chainId) })
+      if (matchedTx) {
+        logger.info(`checkAbnormalOutTransaction delete by return tx, id:${doc.id}`)
+        await abnormalOutTransactionModel.deleteOne({ id: doc.id })
+      }
     }, { concurrency: 3 });
     if (docs.length && docs.length === pageSize) {
       where.id = { $lt: docs[docs.length - 1].id }
