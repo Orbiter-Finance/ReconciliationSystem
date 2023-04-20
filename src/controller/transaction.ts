@@ -57,7 +57,7 @@ router.post('/invalidTransaction', async (ctx: Context) => {
     }
     if (key) {
         if (/^\d+$/.test(String(key))) {
-          where.inId = { $eq: Number(key) };
+          where.id = { $eq: Number(key) };
         } else {
           where.$or = [
             { from:  { $eq: key } },
@@ -203,7 +203,7 @@ router.post('/abnormalOutTransaction', async (ctx: Context) => {
     }
     if (key) {
         if (/^\d+$/.test(String(key))) {
-          where.inId = { $eq: Number(key) };
+          where.id = { $eq: Number(key) };
         } else {
           where.$or = [
             { from:  { $eq: key } },
