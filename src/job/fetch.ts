@@ -211,7 +211,6 @@ export async function fetchAbnormalOutTransaction() {
   if (maxIdDoc && maxIdDoc.length) {
     sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
   }
-  console.log(sql)
   let result = await pool.query(sql)
   const list = result[0] as AbnormalOutTransaction[]
   logger.info(`fetchAbnormalOutTransaction sql: ${sql} , length:${list.length}`)
@@ -298,9 +297,9 @@ export async function checkAbnormalOutTransaction() {
         logger.info(`checkAbnormalOutTransaction delete by status=99, id:${doc.id}`)
         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
       }
-      const matchedTx = invalidTransaction.findOne({ matchedTxHash: doc.hash, chainId: Number(doc.chainId) })
+      const matchedTx = await invalidTransaction.findOne({ matchedTxHash: doc.hash, chainId: Number(doc.chainId) })
       if (matchedTx) {
-        logger.info(`checkAbnormalOutTransaction delete by return tx, id:${doc.id}`)
+        logger.info(`checkAbnormalOutTransaction delete by return tx:${matchedTx.matchedTxHash}, id:${doc.id}`)
         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
       }
     }, { concurrency: 3 });
