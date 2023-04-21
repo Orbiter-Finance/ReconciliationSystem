@@ -30,8 +30,9 @@ app.use(async (ctx, next) => {
     try {
         const startTime = new Date().valueOf();
         await next();
+        const body = ctx.request.body || {}
         const excTime = new Date().valueOf() - startTime;
-        logger.info(`${ ctx.originalUrl } ${ excTime }ms`);
+        logger.info(`${ ctx.originalUrl }, body=${JSON.stringify(body)} ${ excTime }ms`);
     } catch (e: any) {
         const status = e.status || 500;
         // The detailed error content of the server 500 error is not returned to the client because it may contain sensitive information
