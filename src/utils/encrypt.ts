@@ -6,7 +6,7 @@ const salt = 'asdfqwer123#';
 const privateKey = env.encryptPrivateKey;
 
 export async function encrypt(data: any) {
-    return jwt.sign({ data: (data + salt) }, privateKey, { expiresIn: '24h' });
+    return jwt.sign({ data: (data + salt) }, privateKey);
 }
 
 export async function decrypt(token: string) {
