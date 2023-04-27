@@ -4,6 +4,7 @@ export const confirmStatus = {
     successByAdmin: 'successByAdmin',
     failByAdmin: 'failByAdmin',
     failByAdminAndAutoReply: 'failByAdminAndAutoReply',
+    manualReplyByAdmin: 'manualReplyByAdmin',
     doubtByAdmin: 'doubtByAdmins'
 }
  
@@ -15,7 +16,8 @@ export const state = {
     failByMulti: 4,
     failByUnknown: 5,
     doubtByAdmin: 6,
-    failByAdminAndAutoReply: 7
+    failByAdminAndAutoReply: 7,
+    manualReplyByAdmin: 8,
 }
 
 export const invalidTransactionState = {

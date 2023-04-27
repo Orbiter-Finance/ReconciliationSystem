@@ -21,7 +21,7 @@ router.post("/submit", async (ctx) => {
     let { makerTxId, hash, signature } = body;
     const status = +body.status;
     const { uid, name, role } = ctx as any;
-    if (!makerTxId || (Array.isArray(makerTxId) && makerTxId.length < 1) || ![0,1,2,3,4].includes(status) || (!signature && status === 4)) {
+    if (!makerTxId || (Array.isArray(makerTxId) && makerTxId.length < 1) || ![0,1,2,3,4,5].includes(status) || (!signature && status === 4)) {
         ctx.body = { code: 1, msg: 'Parameter error' };
         return;
     }
@@ -53,6 +53,7 @@ router.post("/submit", async (ctx) => {
         case 2: confirmStatus = constant.confirmStatus.failByAdmin;break; // not auto reply
         case 3: confirmStatus = constant.confirmStatus.doubtByAdmin;break;
         case 4: confirmStatus = constant.confirmStatus.failByAdminAndAutoReply;break;
+        case 5: confirmStatus = constant.confirmStatus.manualReplyByAdmin;break;
     }
     const userLog = { uid, name, hash, updateStatus: status, role, updateTime: new Date() };
     const updateData:any = { confirmStatus, userLog }

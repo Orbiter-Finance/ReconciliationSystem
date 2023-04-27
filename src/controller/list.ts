@@ -89,6 +89,7 @@ router.get("/newlist", async (ctx) => {
             constant.confirmStatus.failByAdmin,
             constant.confirmStatus.successByAdmin,
             constant.confirmStatus.doubtByAdmin,
+            constant.confirmStatus.manualReplyByAdmin,
           ],
         },
       },
@@ -110,6 +111,7 @@ router.get("/newlist", async (ctx) => {
             constant.confirmStatus.successByAdmin,
             constant.confirmStatus.doubtByAdmin,
             constant.confirmStatus.failByAdminAndAutoReply,
+            constant.confirmStatus.manualReplyByAdmin,
           ],
         },
       },
@@ -119,6 +121,13 @@ router.get("/newlist", async (ctx) => {
       { status: { $nin: ["matched", "warning"] } },
       {
         confirmStatus: { $eq: constant.confirmStatus.failByAdminAndAutoReply }
+      }
+    ]
+  } else if (state === constant.state.manualReplyByAdmin) {
+    where.$and = [
+      { status: { $nin: ["matched", "warning"] } },
+      {
+        confirmStatus: { $eq: constant.confirmStatus.manualReplyByAdmin }
       }
     ]
   }
