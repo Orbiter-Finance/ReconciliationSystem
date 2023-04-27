@@ -205,6 +205,8 @@ router.get("/newlist", async (ctx) => {
           state = constant.state.failByAdminAndAutoReply;
         } else if (confirmStatus === constant.confirmStatus.doubtByAdmin) {
           state = constant.state.doubtByAdmin;
+        } else if (confirmStatus === constant.confirmStatus.manualReplyByAdmin) {
+          state = constant.state.manualReplyByAdmin
         } else if (status === "warning") {
           state = constant.state.failByMulti;
         }
