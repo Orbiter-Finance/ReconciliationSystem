@@ -139,6 +139,7 @@ export async function startMatch2() {
   do {
     const makerTxs = await makerTxModel.find(where).sort({id: -1}).limit(limit);
     await bluebird.map(makerTxs, async (makerTx: any, index) => {
+      logger.info(`startMatch2, getMatchedTxByMakerTx, ${makerTx.id}, ${makerTx.toChain}, ${makerTx.inData.extra?.toSymbol}`)
       let res = await getMatchedTxByMakerTx(makerTx)
       if (res && res.length === 1) {
         const [data]: any = res;
