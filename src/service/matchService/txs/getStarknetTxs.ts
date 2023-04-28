@@ -24,6 +24,6 @@ export default async function getStarknetTxs(address: string, startTime?: number
     where['sender_address'] = { $in: makerList }
   }
   const matcheds = await StarknetTxModel.find(where).sort({ timestamp: -1 }).limit(300)
-  logger.info(`getStarknetTxs --- ${matcheds.length}`)
+  // logger.info(`getStarknetTxs --- ${matcheds.length}`)
   return matcheds
 }

@@ -12,7 +12,7 @@ export default async function getZkSynceraTxs(address: string, fromList?: string
   if (fromList && fromList.length) {
     where.from = { $in: fromList }
   }
-  const matcheds = await ZkSynceraTxModel.find(where)
-  logger.info(`getZkSynceraTxs -- ${matcheds.length}`)
+  const matcheds = await ZkSynceraTxModel.find(where).limit(1000);
+  // logger.info(`getZkSynceraTxs -- ${matcheds.length}`)
   return matcheds
 }
