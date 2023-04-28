@@ -22,15 +22,15 @@ export async function start() {
                 return
             }
             lockMap[jobConfig.name] = true
-            let start = moment().format('YYYY-MM-DD HH:mm:ss');
-            logger.info(`start ${jobConfig.name} at ${moment().format('YYYY-MM-DD HH:mm:ss')}`)
+            let start = moment().format('YYYY-MM-DD HH:mm:ss.SSS');
+            logger.info(`start ${jobConfig.name} at ${start}`)
             try {
                 await handleFunction()
             } catch (error) {
                 logger.error(`job ${jobConfig.name} error:`, error)
             }
             lockMap[jobConfig.name] = false
-            let end = moment().format('YYYY-MM-DD HH:mm:ss')
+            let end = moment().format('YYYY-MM-DD HH:mm:ss.SSS')
             logger.info(`end ${jobConfig.name} : start:${start} end: ${end}`)
         })
     }

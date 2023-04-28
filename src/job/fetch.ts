@@ -125,7 +125,7 @@ export async function startCheck() {
 export async function startMatch2() {
   logger.info(`startMatch2`)
   let done = false;
-  let limit = 10;
+  let limit = 5;
   const where:any = {
     status: { $nin: ["matched", "warning"] },
     matchedScanTx: { $exists: false }
@@ -174,7 +174,7 @@ export async function startMatch2() {
         logger.info("startMatch2 updated ：", findNum++);
         logger.info("startMatch2 left ：", count - findNum);
       }
-    }, { concurrency: 2 })
+    }, { concurrency: 1 })
 
     if (makerTxs.length >= limit) {
       where.id = { $lt: makerTxs[makerTxs.length - 1].id }
@@ -261,7 +261,7 @@ export async function matchInvalidReceiveTransaction() {
     matchStatus: 'init',
   }
   let done = false;
-  const limit = 10;
+  const limit = 5;
   const count = await invalidTransaction.count(where)
   logger.info('checkInvalidReceiveTransaction length:', count);
   if (!count) {
@@ -305,7 +305,7 @@ export async function matchInvalidReceiveTransaction() {
         logger.info("matchInvalidReceiveTransaction updated ：", findNum++);
         logger.info("matchInvalidReceiveTransaction left ：", count - findNum);
       }
-    }, { concurrency: 2 })
+    }, { concurrency: 1 })
     if (invalidTxs.length >= limit) {
       where.id = { $lt: invalidTxs[invalidTxs.length - 1].id }
     } else {
