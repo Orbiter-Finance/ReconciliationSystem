@@ -1,6 +1,6 @@
  import { isEqualsAddress }  from "./index";
 
-const makers = [
+export const makers = [
   "0x646592183ff25A0c44f09896A384004778F831ED".toLowerCase(), // 
   "0x80C67432656d59144cEFf962E8fAF8926599bCF8".toLowerCase(), // ETH 
   "0xE4eDb277e41dc89aB076a1F049f4a3EfA700bCE8".toLowerCase(), // ETH2 

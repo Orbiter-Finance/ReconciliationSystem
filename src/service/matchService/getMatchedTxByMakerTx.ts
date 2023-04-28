@@ -7,23 +7,23 @@ import getZkSynceraTxs from './txs/getZkSynceraTxs'
 import getScanTokenTxs from './txs/getScanTokenTxs'
 import getScanTxs from './txs/getScanTxs'
 import { BigNumber } from 'ethers'
-import isMaker, { isMaker2 } from '../../utils/isMaker'
+import isMaker, { isMaker2, makers } from '../../utils/isMaker'
 import { ArbNovaTx, ScanTokenTx, ScanTx, StarknetTx, ZkSynceraTx, ZkSyncliteTx } from '../../constant/tx.types'
 import { InvalidTransaction} from '../../model/invalidTransaction'
 export async function getMatchedTxByMakerTx(
   makerTx: MakerTx
 ): Promise<ZkSynceraTx[] | ScanTokenTx[] | ScanTx[] | StarknetTx[] | ZkSyncliteTx[] | ArbNovaTx[] | undefined> {
-  const { replyAccount, toAmount, toChain } = makerTx
+  const { replyAccount, toAmount, toChain, inData } = makerTx
   if (!replyAccount || !isChainId(toChain) || !toAmount) {
     return undefined
   }
 
   if (isStarknet(makerTx)) {
     const amount = toAmount.slice(0, makerTx.toAmount.length - 4) + '0000'
+    const failTxTime = new Date(inData.timestamp).getTime();
+    const txs = await getStarknetTxs(replyAccount, failTxTime, toAmount, makers)
 
-    const txs = await getStarknetTxs(replyAccount)
-
-    return txs?.filter((item) => item?.input?.[7] === amount || item?.input?.[7] === toAmount)
+    return txs?.filter((item) => ((item?.input?.[7] === amount || item?.input?.[7] === toAmount) && isMaker(item.sender_address)))
   }
 
   if (isZksynclite(makerTx)) {
@@ -56,7 +56,7 @@ export async function getMatchedTxByMakerTx(
   }
 
   if (isZkSyncera(makerTx)) {
-    const txs = await getZkSynceraTxs(replyAccount)
+    const txs = await getZkSynceraTxs(replyAccount, makers)
 
     return txs?.filter((item) => {
       try {

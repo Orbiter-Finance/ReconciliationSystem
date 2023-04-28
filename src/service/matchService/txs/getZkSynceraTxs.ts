@@ -2,14 +2,17 @@ import ZkSynceraTxModel from '../../../model/zksynceraTx'
 import { ZkSynceraTx } from '../../../constant/tx.types'
 import logger from '../../../utils/logger'
 
-export default async function getZkSynceraTxs(address: string): Promise<ZkSynceraTx[] | undefined> {
+export default async function getZkSynceraTxs(address: string, fromList?: string []): Promise<ZkSynceraTx[] | undefined> {
   if (!address) {
     return undefined
   }
-
-  const matcheds = await ZkSynceraTxModel.find({
+  const where: any = {
     to: address.toLowerCase(),
-  })
+  }
+  if (fromList && fromList.length) {
+    where.from = { $in: fromList }
+  }
+  const matcheds = await ZkSynceraTxModel.find(where)
   logger.info(`getZkSynceraTxs -- ${matcheds.length}`)
   return matcheds
 }
