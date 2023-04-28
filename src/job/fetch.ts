@@ -124,48 +124,63 @@ export async function startCheck() {
 
 export async function startMatch2() {
   logger.info(`startMatch2`)
-  const makerTxs = await makerTxModel.find({
+  let done = false;
+  let limit = 10;
+  const where:any = {
     status: { $nin: ["matched", "warning"] },
     matchedScanTx: { $exists: false }
-  });
+  }
+  const count = await makerTxModel.count(where);
+  logger.info(`startMatch2: makerTxs.length:${count}`)
+  if (!count) {
+    return
+  }
   let findNum = 0;
-  logger.info(`startMatch2: makerTxs.length:${makerTxs.length}`)
-  await bluebird.map(makerTxs, async (makerTx: any, index) => {
-    let res = await getMatchedTxByMakerTx(makerTx)
-    if (res && res.length === 1) {
-      const [data]: any = res;
-      await makerTxModel.findOneAndUpdate(
-        { id: makerTx.id },
-        {
-          $set: {
-            matchedScanTx: {
-              ...data,
-              hash: data.hash ? data.hash : data.txHash ? data.txHash : data._id,
+  do {
+    const makerTxs = await makerTxModel.find(where).sort({id: -1}).limit(limit);
+    await bluebird.map(makerTxs, async (makerTx: any, index) => {
+      let res = await getMatchedTxByMakerTx(makerTx)
+      if (res && res.length === 1) {
+        const [data]: any = res;
+        await makerTxModel.findOneAndUpdate(
+          { id: makerTx.id },
+          {
+            $set: {
+              matchedScanTx: {
+                ...data,
+                hash: data.hash ? data.hash : data.txHash ? data.txHash : data._id,
+              },
+              status: "matched",
             },
-            status: "matched",
-          },
-        }
-      );
-      logger.info("startMatch2 updated ：", findNum++);
-      logger.info("startMatch2 left ：", makerTxs.length - findNum);
-    }
+          }
+        );
+        logger.info("startMatch2 updated ：", findNum++);
+        logger.info("startMatch2 left ：", count - findNum);
+      }
+  
+      if (res && res.length > 1) {
+        await makerTxModel.findOneAndUpdate(
+          { id: makerTx.id },
+          {
+            $set: {
+              warnTxList: res.map((item) =>
+                item.hash ? item.hash : item.txHash ? item.txHash : item._id
+              ),
+              status: "warning",
+            },
+          }
+        );
+        logger.info("startMatch2 updated ：", findNum++);
+        logger.info("startMatch2 left ：", count - findNum);
+      }
+    }, { concurrency: 2 })
 
-    if (res && res.length > 1) {
-      await makerTxModel.findOneAndUpdate(
-        { id: makerTx.id },
-        {
-          $set: {
-            warnTxList: res.map((item) =>
-              item.hash ? item.hash : item.txHash ? item.txHash : item._id
-            ),
-            status: "warning",
-          },
-        }
-      );
-      logger.info("startMatch2 updated ：", findNum++);
-      logger.info("startMatch2 left ：", makerTxs.length - findNum);
+    if (makerTxs.length >= limit) {
+      where.id = { $lt: makerTxs[makerTxs.length - 1].id }
+    } else {
+      done = true;
     }
-  }, { concurrency: 2 })
+  } while(!done)
 }
 
 
@@ -241,50 +256,61 @@ export async function fetchAbnormalOutTransaction() {
 
 
 export async function matchInvalidReceiveTransaction() {
-  const invalidTxs = await invalidTransaction.find({
+  const where: any = {
     matchStatus: 'init',
-  })
-  logger.info('checkInvalidReceiveTransaction length:', invalidTxs.length);
-  if (!invalidTxs.length) {
+  }
+  let done = false;
+  const limit = 10;
+  const count = await invalidTransaction.count(where)
+  logger.info('checkInvalidReceiveTransaction length:', count);
+  if (!count) {
     return
   }
   let findNum = 0;
-  await bluebird.map(invalidTxs, async (invalidTx , index) => {
-    let res = await getMatchedTxByInvalidReceiveTransaction(invalidTx)
-    if (res && res.length === 1) {
-      const [data]: any = res;
-      await invalidTransaction.findOneAndUpdate(
-        { id: invalidTx.id },
-        {
-          $set: {
-            matchedTx: {
-              ...data,
-              hash: data.hash ? data.hash : data.txHash ? data.txHash : data._id,
+  do {
+    const invalidTxs = await invalidTransaction.find(where).sort({id: -1}).limit(limit);
+    await bluebird.map(invalidTxs, async (invalidTx , index) => {
+      let res = await getMatchedTxByInvalidReceiveTransaction(invalidTx)
+      if (res && res.length === 1) {
+        const [data]: any = res;
+        await invalidTransaction.findOneAndUpdate(
+          { id: invalidTx.id },
+          {
+            $set: {
+              matchedTx: {
+                ...data,
+                hash: data.hash ? data.hash : data.txHash ? data.txHash : data._id,
+              },
+              matchStatus: "matched",
             },
-            matchStatus: "matched",
-          },
-        }
-      );
-      logger.info("matchInvalidReceiveTransaction updated ：", findNum++);
-      logger.info("matchInvalidReceiveTransaction left ：", invalidTxs.length - findNum);
+          }
+        );
+        logger.info("matchInvalidReceiveTransaction updated ：", findNum++);
+        logger.info("matchInvalidReceiveTransaction left ：", count - findNum);
+      }
+  
+      if (res && res.length > 1) {
+        await invalidTransaction.findOneAndUpdate(
+          { id: invalidTx.id },
+          {
+            $set: {
+              warnTxList: res.map((item) =>
+                item.hash ? item.hash : item.txHash ? item.txHash : item._id
+              ),
+              matchStatus: "warning",
+            },
+          }
+        );
+        logger.info("matchInvalidReceiveTransaction updated ：", findNum++);
+        logger.info("matchInvalidReceiveTransaction left ：", count - findNum);
+      }
+    }, { concurrency: 2 })
+    if (invalidTxs.length >= limit) {
+      where.id = { $lt: invalidTxs[invalidTxs.length - 1].id }
+    } else {
+      done = true
     }
-
-    if (res && res.length > 1) {
-      await invalidTransaction.findOneAndUpdate(
-        { id: invalidTx.id },
-        {
-          $set: {
-            warnTxList: res.map((item) =>
-              item.hash ? item.hash : item.txHash ? item.txHash : item._id
-            ),
-            matchStatus: "warning",
-          },
-        }
-      );
-      logger.info("matchInvalidReceiveTransaction updated ：", findNum++);
-      logger.info("matchInvalidReceiveTransaction left ：", invalidTxs.length - findNum);
-    }
-  }, { concurrency: 2 })
+  } while(!done)
 }
 
 export async function checkAbnormalOutTransaction() {
