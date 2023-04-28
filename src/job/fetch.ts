@@ -184,159 +184,159 @@ export async function startMatch2() {
 }
 
 
-export async function fetchInvalidTransaction() {
-  const concurrency = 3
-  const maxIdDoc = await invalidTransaction.find({}).sort({ id: -1 }).limit(concurrency);
-  let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-04-13' AND side = 0 AND \`value\` != '0'`
-  if (maxIdDoc && maxIdDoc.length) {
-    sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
-  }
-  let result = await pool.query(sql)
-  const list = result[0] as InvalidTransactionMysql[]
-  logger.info(`fetchInvalidTransaction sql: ${sql} , length:${list.length}`)
-  if (!list.length) {
-    return
-  }
-  await bluebird.map(list, async (item) => {
-    const hash = item.hash;
-    if (IsIgnoreAddress(item.from)) {
-      logger.info(`fetchInvalidTransaction: maker transfer, makerAddress:${item.from}, id:${item.id}`)
-    }
-    const doc = await invalidTransaction.findOne({
-      hash: hash
-    })
+// export async function fetchInvalidTransaction() {
+//   const concurrency = 3
+//   const maxIdDoc = await invalidTransaction.find({}).sort({ id: -1 }).limit(concurrency);
+//   let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-04-13' AND side = 0 AND \`value\` != '0'`
+//   if (maxIdDoc && maxIdDoc.length) {
+//     sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
+//   }
+//   let result = await pool.query(sql)
+//   const list = result[0] as InvalidTransactionMysql[]
+//   logger.info(`fetchInvalidTransaction sql: ${sql} , length:${list.length}`)
+//   if (!list.length) {
+//     return
+//   }
+//   await bluebird.map(list, async (item) => {
+//     const hash = item.hash;
+//     if (IsIgnoreAddress(item.from)) {
+//       logger.info(`fetchInvalidTransaction: maker transfer, makerAddress:${item.from}, id:${item.id}`)
+//     }
+//     const doc = await invalidTransaction.findOne({
+//       hash: hash
+//     })
 
-    const insertData = item as unknown as InvalidTransaction
-    if (doc) {
-      return
-    }
-    insertData.timestamp = new Date(item.timestamp)
-    insertData.createdAt = new Date(item.createdAt)
-    insertData.updatedAt = new Date(item.updatedAt)
-    await invalidTransaction.create(insertData)
-  }, {concurrency: concurrency})
-}
-
-
-export async function fetchAbnormalOutTransaction() {
-  const concurrency = 3
-  const end = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
-  let sql = `SELECT * FROM transaction WHERE \`status\` !=99 AND \`timestamp\` > '2023-03-15' AND \`timestamp\` < '${end}' AND side = 1`;
-  const maxIdDoc = await abnormalOutTransactionModel.find({}).sort({ id: -1 }).limit(concurrency);
-  if (maxIdDoc && maxIdDoc.length) {
-    sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
-  }
-  let result = await pool.query(sql)
-  const list = result[0] as AbnormalOutTransaction[]
-  logger.info(`fetchAbnormalOutTransaction sql: ${sql} , length:${list.length}`)
-  await bluebird.map(list, async (item) => {
-    if (isMaker(item.to)) {
-      logger.info(`fetchAbnormalOutTransaction: to maker: ${item.to}, id: ${item.id}`)
-      return;
-    }
-    const hash = item.hash;
-    const doc = await abnormalOutTransactionModel.findOne({
-      hash: hash
-    })
-    const insertData = item
-    if (doc) {
-      return
-    }
-    const matchedTx = await invalidTransaction.findOne({ 'matchedTx.hash': hash, chainId: Number(item.chainId) })
-    if (matchedTx) {
-      logger.info(`fetchAbnormalOutTransaction ignore by return tx:${item.hash}, id:${item.id}`)
-      return
-    }
-    insertData.timestamp = new Date(item.timestamp)
-    insertData.createdAt = new Date(item.createdAt)
-    insertData.updatedAt = new Date(item.updatedAt)
-    await abnormalOutTransactionModel.create(insertData)
-  }, {concurrency: concurrency})
-}
+//     const insertData = item as unknown as InvalidTransaction
+//     if (doc) {
+//       return
+//     }
+//     insertData.timestamp = new Date(item.timestamp)
+//     insertData.createdAt = new Date(item.createdAt)
+//     insertData.updatedAt = new Date(item.updatedAt)
+//     await invalidTransaction.create(insertData)
+//   }, {concurrency: concurrency})
+// }
 
 
-export async function matchInvalidReceiveTransaction() {
-  const where: any = {
-    matchStatus: 'init',
-  }
-  let done = false;
-  const limit = 10;
-  const count = await invalidTransaction.count(where)
-  logger.info('checkInvalidReceiveTransaction length:', count);
-  if (!count) {
-    return
-  }
-  let findNum = 0;
-  do {
-    const invalidTxs = await invalidTransaction.find(where).sort({id: -1}).limit(limit);
-    await bluebird.map(invalidTxs, async (invalidTx , index) => {
-      let res = await getMatchedTxByInvalidReceiveTransaction(invalidTx)
-      if (res && res.length === 1) {
-        const [data]: any = res;
-        await invalidTransaction.findOneAndUpdate(
-          { id: invalidTx.id },
-          {
-            $set: {
-              matchedTx: {
-                ...data,
-                hash: data.hash ? data.hash : data.txHash ? data.txHash : data._id,
-              },
-              matchStatus: "matched",
-            },
-          }
-        );
-        logger.info("matchInvalidReceiveTransaction updated ：", findNum++);
-        logger.info("matchInvalidReceiveTransaction left ：", count - findNum);
-      }
+// export async function fetchAbnormalOutTransaction() {
+//   const concurrency = 3
+//   const end = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
+//   let sql = `SELECT * FROM transaction WHERE \`status\` !=99 AND \`timestamp\` > '2023-03-15' AND \`timestamp\` < '${end}' AND side = 1`;
+//   const maxIdDoc = await abnormalOutTransactionModel.find({}).sort({ id: -1 }).limit(concurrency);
+//   if (maxIdDoc && maxIdDoc.length) {
+//     sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
+//   }
+//   let result = await pool.query(sql)
+//   const list = result[0] as AbnormalOutTransaction[]
+//   logger.info(`fetchAbnormalOutTransaction sql: ${sql} , length:${list.length}`)
+//   await bluebird.map(list, async (item) => {
+//     if (isMaker(item.to)) {
+//       logger.info(`fetchAbnormalOutTransaction: to maker: ${item.to}, id: ${item.id}`)
+//       return;
+//     }
+//     const hash = item.hash;
+//     const doc = await abnormalOutTransactionModel.findOne({
+//       hash: hash
+//     })
+//     const insertData = item
+//     if (doc) {
+//       return
+//     }
+//     const matchedTx = await invalidTransaction.findOne({ 'matchedTx.hash': hash, chainId: Number(item.chainId) })
+//     if (matchedTx) {
+//       logger.info(`fetchAbnormalOutTransaction ignore by return tx:${item.hash}, id:${item.id}`)
+//       return
+//     }
+//     insertData.timestamp = new Date(item.timestamp)
+//     insertData.createdAt = new Date(item.createdAt)
+//     insertData.updatedAt = new Date(item.updatedAt)
+//     await abnormalOutTransactionModel.create(insertData)
+//   }, {concurrency: concurrency})
+// }
+
+
+// export async function matchInvalidReceiveTransaction() {
+//   const where: any = {
+//     matchStatus: 'init',
+//   }
+//   let done = false;
+//   const limit = 10;
+//   const count = await invalidTransaction.count(where)
+//   logger.info('checkInvalidReceiveTransaction length:', count);
+//   if (!count) {
+//     return
+//   }
+//   let findNum = 0;
+//   do {
+//     const invalidTxs = await invalidTransaction.find(where).sort({id: -1}).limit(limit);
+//     await bluebird.map(invalidTxs, async (invalidTx , index) => {
+//       let res = await getMatchedTxByInvalidReceiveTransaction(invalidTx)
+//       if (res && res.length === 1) {
+//         const [data]: any = res;
+//         await invalidTransaction.findOneAndUpdate(
+//           { id: invalidTx.id },
+//           {
+//             $set: {
+//               matchedTx: {
+//                 ...data,
+//                 hash: data.hash ? data.hash : data.txHash ? data.txHash : data._id,
+//               },
+//               matchStatus: "matched",
+//             },
+//           }
+//         );
+//         logger.info("matchInvalidReceiveTransaction updated ：", findNum++);
+//         logger.info("matchInvalidReceiveTransaction left ：", count - findNum);
+//       }
   
-      if (res && res.length > 1) {
-        await invalidTransaction.findOneAndUpdate(
-          { id: invalidTx.id },
-          {
-            $set: {
-              warnTxList: res.map((item) =>
-                item.hash ? item.hash : item.txHash ? item.txHash : item._id
-              ),
-              matchStatus: "warning",
-            },
-          }
-        );
-        logger.info("matchInvalidReceiveTransaction updated ：", findNum++);
-        logger.info("matchInvalidReceiveTransaction left ：", count - findNum);
-      }
-    }, { concurrency: 2 })
-    if (invalidTxs.length >= limit) {
-      where.id = { $lt: invalidTxs[invalidTxs.length - 1].id }
-    } else {
-      done = true
-    }
-  } while(!done)
-}
+//       if (res && res.length > 1) {
+//         await invalidTransaction.findOneAndUpdate(
+//           { id: invalidTx.id },
+//           {
+//             $set: {
+//               warnTxList: res.map((item) =>
+//                 item.hash ? item.hash : item.txHash ? item.txHash : item._id
+//               ),
+//               matchStatus: "warning",
+//             },
+//           }
+//         );
+//         logger.info("matchInvalidReceiveTransaction updated ：", findNum++);
+//         logger.info("matchInvalidReceiveTransaction left ：", count - findNum);
+//       }
+//     }, { concurrency: 2 })
+//     if (invalidTxs.length >= limit) {
+//       where.id = { $lt: invalidTxs[invalidTxs.length - 1].id }
+//     } else {
+//       done = true
+//     }
+//   } while(!done)
+// }
 
-export async function checkAbnormalOutTransaction() {
-  let done = false;
-  let where: { id?: any } = {};
-  let pageSize = 100;
-  do {
-    const docs = await abnormalOutTransactionModel.find(where).sort({id: -1}).limit(pageSize).lean();
-    await bluebird.map(docs, async (doc) => {
-      const sql = `SELECT * FROM transaction WHERE \`status\` = 99 AND id=${doc.id}`
-      let result = await pool.query(sql)
-      const list = result[0] as InvalidTransactionMysql[]
-      if (list.length) {
-        logger.info(`checkAbnormalOutTransaction delete by status=99, id:${doc.id}`)
-        await abnormalOutTransactionModel.deleteOne({ id: doc.id })
-      }
-      const matchedTx = await invalidTransaction.findOne({ 'matchedTx.hash': doc.hash, chainId: Number(doc.chainId) })
-      if (matchedTx) {
-        logger.info(`checkAbnormalOutTransaction delete by return tx:${doc.hash}, id:${doc.id}`)
-        await abnormalOutTransactionModel.deleteOne({ id: doc.id })
-      }
-    }, { concurrency: 3 });
-    if (docs.length && docs.length === pageSize) {
-      where.id = { $lt: docs[docs.length - 1].id }
-    } else {
-      done = true
-    }
-  } while(!done)
-}
+// export async function checkAbnormalOutTransaction() {
+//   let done = false;
+//   let where: { id?: any } = {};
+//   let pageSize = 100;
+//   do {
+//     const docs = await abnormalOutTransactionModel.find(where).sort({id: -1}).limit(pageSize).lean();
+//     await bluebird.map(docs, async (doc) => {
+//       const sql = `SELECT * FROM transaction WHERE \`status\` = 99 AND id=${doc.id}`
+//       let result = await pool.query(sql)
+//       const list = result[0] as InvalidTransactionMysql[]
+//       if (list.length) {
+//         logger.info(`checkAbnormalOutTransaction delete by status=99, id:${doc.id}`)
+//         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
+//       }
+//       const matchedTx = await invalidTransaction.findOne({ 'matchedTx.hash': doc.hash, chainId: Number(doc.chainId) })
+//       if (matchedTx) {
+//         logger.info(`checkAbnormalOutTransaction delete by return tx:${doc.hash}, id:${doc.id}`)
+//         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
+//       }
+//     }, { concurrency: 3 });
+//     if (docs.length && docs.length === pageSize) {
+//       where.id = { $lt: docs[docs.length - 1].id }
+//     } else {
+//       done = true
+//     }
+//   } while(!done)
+// }
