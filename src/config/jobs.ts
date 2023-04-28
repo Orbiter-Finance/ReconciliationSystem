@@ -9,7 +9,7 @@ type Job = {
 
 const jobs: Job[] = [
     {name: 'startFetch', cron: '*/30 * * * * *', enable: true },
-    {name: 'startCheck', cron: '*/30 * * * * *', enable: true },
+    // {name: 'startCheck', cron: '*/30 * * * * *', enable: true },
     {name: 'startMatch2', cron: '*/30 * * * * *', enable: true },
     // {name: 'fetchInvalidTransaction', cron: '*/30 * * * * *', enable: true },
     // {name: 'fetchAbnormalOutTransaction', cron: '*/30 * * * * *', enable: true },
