@@ -116,7 +116,8 @@ export async function getMatchedTxByInvalidReceiveTransaction(
 
   if (isStarknet(chainId)) {
 
-    const txs = await getStarknetTxs(replyAccount)
+    const txTime = new Date(tx.timestamp).getTime()
+    const txs = await getStarknetTxs(replyAccount, txTime, value, makers)
 
     return txs?.filter((item) => item?.input?.[7] === value)
   }
