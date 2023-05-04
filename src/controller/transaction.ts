@@ -74,7 +74,7 @@ router.post('/invalidTransaction', async (ctx: Context) => {
         where.matchStatus = { $eq: 'matched' }
     } else if (state === constant.invalidTransactionState.replyByAdmin) {
       where.matchStatus = { $eq: 'init' }
-      where.confirmStatus = { $eq: constant.invalidTransactionState.replyByAdmin }
+      where.confirmStatus = { $eq: constant.invalidTransactionConfirmStatus.replyByAdmin }
     } else if (state === constant.invalidTransactionState.multiMatched) {
         where.matchStatus = { $eq: 'warning' }
     } else if (state === constant.invalidTransactionState.successByAdmin) {
