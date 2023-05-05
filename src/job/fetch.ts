@@ -344,9 +344,10 @@ export async function checkAbnormalOutTransaction() {
         chainId: Number(doc.chainId),
         $or: [
           {'matchedTx.hash': doc.hash},
-          {'matchedScanTx._id': doc.hash.replace(/0x0+/, '0x')},
-          {'matchedScanTx.blockHash': doc.hash},
+          {'matchedTx._id': doc.hash.replace(/0x0+/, '0x')},
+          {'matchedTx.blockHash': doc.hash},
           {warnTxList: { $in: [doc.hash] }},
+          {warnTxList: { $in: [doc.hash.replace(/0x0+/, '0x')] }},
         ]
       })
       if (matchedTx) {
