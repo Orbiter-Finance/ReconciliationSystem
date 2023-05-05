@@ -108,22 +108,22 @@ export async function getMatchedTxByMakerTx(
 export async function getMatchedTxByInvalidReceiveTransaction(
   tx: InvalidTransaction
   ): Promise<ZkSynceraTx[] | ScanTokenTx[] | ScanTx[] | StarknetTx[] | ZkSyncliteTx[] | ArbNovaTx[] | undefined> {
-  const { replyAccount, value, symbol, tokenAddress } = tx
+  const { from, value, symbol, tokenAddress } = tx
   let chainId = String(tx.chainId)
-  if (!replyAccount || !isChainId(chainId) || !chainId) {
+  if (!from || !isChainId(chainId) || !chainId) {
     return undefined
   }
 
   if (isStarknet(chainId)) {
 
     const txTime = new Date(tx.timestamp).getTime()
-    const txs = await getStarknetTxs(replyAccount, txTime, value, makers)
+    const txs = await getStarknetTxs(from, txTime, value, makers)
 
     return txs?.filter((item) => item?.input?.[7] === value)
   }
 
   if (isZksynclite(chainId)) {
-    const txs = await getZkSyncliteTxs(replyAccount)
+    const txs = await getZkSyncliteTxs(from)
 
     return txs?.filter((item) => {
       try {
@@ -138,7 +138,7 @@ export async function getMatchedTxByInvalidReceiveTransaction(
   }
 
   if (isArbNova(chainId)) {
-    const txs = await getArbNovaScanTxs(replyAccount)
+    const txs = await getArbNovaScanTxs(from)
 
     return txs?.filter((item) => {
       try {
@@ -152,7 +152,7 @@ export async function getMatchedTxByInvalidReceiveTransaction(
   }
 
   if (isZkSyncera(chainId)) {
-    const txs = await getZkSynceraTxs(replyAccount)
+    const txs = await getZkSynceraTxs(from)
 
     return txs?.filter((item) => {
       try {
@@ -166,7 +166,7 @@ export async function getMatchedTxByInvalidReceiveTransaction(
   }
 
   if ((['DAI', 'USDC', 'USDT'].includes(symbol) || isWETHChain(chainId))) {
-    const txs = await getScanTokenTxs(replyAccount, tokenAddress, chainId)
+    const txs = await getScanTokenTxs(from, tokenAddress, chainId)
 
     return txs?.filter((item) => {
       try {
@@ -178,8 +178,7 @@ export async function getMatchedTxByInvalidReceiveTransaction(
       }
     })
   }
-
-  const txs = await getScanTxs(replyAccount, chainId)
+  const txs = await getScanTxs(from, chainId)
 
   if (txs) {
     return txs?.filter((item) => {
