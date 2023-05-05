@@ -328,7 +328,13 @@ export async function checkAbnormalOutTransaction() {
         logger.info(`checkAbnormalOutTransaction delete by status=99, id:${doc.id}`)
         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
       }
-      const matchedTx = await invalidTransaction.findOne({ 'matchedTx.hash': doc.hash, chainId: Number(doc.chainId) })
+      const matchedTx = await invalidTransaction.findOne({
+        chainId: Number(doc.chainId),
+        $or: [
+          {'matchedTx.hash': doc.hash},
+          {warnTxList: { $in: [doc.hash] }},
+        ]
+      })
       if (matchedTx) {
         logger.info(`checkAbnormalOutTransaction delete by return tx:${doc.hash}, id:${doc.id}`)
         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
