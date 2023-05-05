@@ -344,6 +344,8 @@ export async function checkAbnormalOutTransaction() {
         chainId: Number(doc.chainId),
         $or: [
           {'matchedTx.hash': doc.hash},
+          {'matchedScanTx._id': doc.hash.replace(/0x0+/, '0x')},
+          {'matchedScanTx.blockHash': doc.hash},
           {warnTxList: { $in: [doc.hash] }},
         ]
       })
@@ -374,8 +376,9 @@ export async function checkAbnormalOutTransaction() {
 
 export async function checkAbnormalOutTransaction2() {
   let done = false;
-  let where: { id?: any, hash?:string } = {
+  let where: { id?: any, hash?:string, chainId?: number } = {
     // hash: "0xebea7da4710f642056f859535cc07b191681f000cc08228c92d94b3158727f1f"
+    // chainId: 3
   };
   let pageSize = 100;
   do {
@@ -383,6 +386,9 @@ export async function checkAbnormalOutTransaction2() {
     await bluebird.map(docs, async (doc) => {
       const result = await checkTxValidOnChain(doc.hash, String(doc.chainId))
       console.log(`id: ${doc.id}, hash: ${doc.hash}, chain:${doc.chainId}, result: ${result}`)
+      if (!result) {
+        await invalidTransaction.deleteOne({id: doc.id})
+      }
     }, { concurrency: 1 });
     if (docs.length && docs.length === pageSize) {
       where.id = { $lt: docs[docs.length - 1].id }
