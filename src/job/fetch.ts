@@ -187,7 +187,7 @@ export async function startMatch2() {
 
 
 export async function fetchInvalidTransaction() {
-  const concurrency = 3
+  const concurrency = 2
   const maxIdDoc = await invalidTransaction.find({}).sort({ id: -1 }).limit(concurrency);
   let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-04-13' AND side = 0 AND \`value\` != '0'`
   if (maxIdDoc && maxIdDoc.length) {
@@ -226,7 +226,7 @@ export async function fetchInvalidTransaction() {
 
 
 export async function fetchAbnormalOutTransaction() {
-  const concurrency = 3
+  const concurrency = 2
   const end = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
   let sql = `SELECT * FROM transaction WHERE \`status\` !=99 AND \`timestamp\` > '2023-03-15' AND \`timestamp\` < '${end}' AND side = 1`;
   const maxIdDoc = await abnormalOutTransactionModel.find({}).sort({ id: -1 }).limit(concurrency);
