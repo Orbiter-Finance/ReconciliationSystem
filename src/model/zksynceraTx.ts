@@ -4,7 +4,7 @@ import * as  db2 from "./initdb2";
 let Schema = mongoose.Schema;
 
 let ZksynceraTx = new Schema({
-  _id: Schema.Types.ObjectId,
+  _id: String,
   blockHash: String,
   from: String,
   to: String,

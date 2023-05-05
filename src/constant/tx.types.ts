@@ -102,4 +102,34 @@ export interface ZkSynceraTx {
     createdAt: string
     batchId: null
   }
-  
+
+
+  export type ZkSyncliteApiTxType ={
+    tx_type: String,
+    from: String,
+    to: String,
+    token: Number,
+    amount: String,
+    fee: String,
+    block_number: Number,
+    nonce: Number,
+    created_at: String,
+    fail_reason: String,
+    tx: {
+        to: String,
+        fee: String,
+        from: String,
+        type: String,
+        nonce: Number,
+        token: Number,
+        amount: String,
+        accountId: Number,
+        signature: {
+            pubKey: String,
+            signature: String
+        },
+        validFrom: Number,
+        validUntil: Number
+    },
+    batch_id: String
+  }

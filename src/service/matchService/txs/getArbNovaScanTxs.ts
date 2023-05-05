@@ -83,3 +83,73 @@ export default async function getArbNovaScanTxs(address: string, maxCount = 200,
   }
   return dataList
 }
+
+
+export async function getArbNovaScanTxByHash(hash: string) {
+  try {
+    const r = await axios.get(`https://nova-explorer.arbitrum.io/tx/${hash}`)
+    const html = r.data;
+    let $ = load(html)
+    const tx:{
+      hash: string,
+      blockNumber: string,
+      value: string,
+      symbol: string,
+      fee: string,
+      nonce: number
+      result: string,
+      status: string,
+      timestamp: string,
+      from: string,
+      to: string
+    } = {
+      hash: "",
+      blockNumber: "",
+      value: "",
+      symbol: "",
+      fee: "",
+      nonce: 0,
+      result: "",
+      status: "",
+      timestamp: "",
+      from: "",
+      to: ""
+    }
+    tx.hash = $('span.transaction-details-address').text().trim()
+    const spans = $('span')
+    for (let i = 0; i< spans.length; i++) {
+        let span = spans[i];
+        if (span.attribs['class'] && span.attribs['data-transaction-status']) {
+            tx.result = span.attribs['data-transaction-status']
+        }
+        if (!span.attribs['class'] && span.attribs['data-transaction-status']) {
+            tx.status =  span.attribs['data-transaction-status']    
+        }
+        if (span.attribs['data-from-now']) {
+            tx.timestamp = span.attribs['data-from-now']
+        }
+        if (span.attribs['data-address-hash']) {
+            if (!tx.from) {
+                tx.from = span.attribs['data-address-hash']
+            } else {
+                tx.to = span.attribs['data-address-hash']
+            }
+        }
+    }
+    let block = $('a.transaction__link')
+    tx.blockNumber = block.text()
+    const valueStr = $('div.card-body > dl:eq(7) dd').text().trim()
+    const txFee = $('div.card-body > dl:eq(8) dd').text().trim()
+    const nonce = $('div.card-body > dl:eq(17) dd').text().trim()
+    const nonceSpan = $('div.card-body > dl:eq(17) dd > span').text().trim()
+
+    tx.value = valueStr.split(' ')[0]
+    tx.symbol = valueStr.split(' ')[1]
+    tx.fee = txFee.split(' ')[0]
+    tx.nonce = Number(nonce.slice(0, nonce.length - nonceSpan.length))
+    return tx
+  } catch (error) {
+    logger.info(`getArbNovaScanTxByHash: ${hash}, error: ${error}`)
+    return undefined
+  }
+}

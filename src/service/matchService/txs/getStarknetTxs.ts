@@ -27,3 +27,9 @@ export default async function getStarknetTxs(address: string, startTime?: number
   // logger.info(`getStarknetTxs --- ${matcheds.length}`)
   return matcheds
 }
+
+
+export async function getStarknetTxByHash(hash: string): Promise<StarknetTx| undefined> {
+  const doc = await StarknetTxModel.findOne({_id: hash});
+  return doc
+}

@@ -9,6 +9,7 @@ import invalidTransaction, { InvalidTransaction } from '../model/invalidTransact
 import { InvalidTransactionMysql } from '../constant/type'
 import abnormalOutTransactionModel, {AbnormalOutTransaction} from '../model/abnormalOutTransaction'
 import isMaker, { IsIgnoreAddress } from '../utils/isMaker'
+import {checkTxValidOnChain} from '../service/matchService/checkTxValidOnChain'
 const REG = new RegExp(/^(?:\d*90..|.*?90..(?:0{0,10}|$))$/)
 
 let first = false;
@@ -203,6 +204,11 @@ export async function fetchInvalidTransaction() {
     if (IsIgnoreAddress(item.from)) {
       logger.info(`fetchInvalidTransaction: maker transfer, makerAddress:${item.from}, id:${item.id}`)
     }
+    let checkR = await checkTxValidOnChain(item.hash, String(item.chainId))
+    if (!checkR) {
+      logger.info(`fetchInvalidTransaction: ignore by checkTxValidOnChain: ${checkR} hash:${item.hash}, id:${item.id}`)
+      return
+    }
     const doc = await invalidTransaction.findOne({
       hash: hash
     })
@@ -234,6 +240,11 @@ export async function fetchAbnormalOutTransaction() {
     if (isMaker(item.to)) {
       logger.info(`fetchAbnormalOutTransaction: to maker: ${item.to}, id: ${item.id}`)
       return;
+    }
+    let checkR = await checkTxValidOnChain(item.hash, String(item.chainId))
+    if (!checkR) {
+      logger.info(`fetchAbnormalOutTransaction: ignore by checkTxValidOnChain: ${checkR} hash:${item.hash}, id:${item.id}`)
+      return
     }
     const hash = item.hash;
     const doc = await abnormalOutTransactionModel.findOne({
@@ -327,6 +338,7 @@ export async function checkAbnormalOutTransaction() {
       if (list.length) {
         logger.info(`checkAbnormalOutTransaction delete by status=99, id:${doc.id}`)
         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
+        return
       }
       const matchedTx = await invalidTransaction.findOne({
         chainId: Number(doc.chainId),
@@ -338,6 +350,18 @@ export async function checkAbnormalOutTransaction() {
       if (matchedTx) {
         logger.info(`checkAbnormalOutTransaction delete by return tx:${doc.hash}, id:${doc.id}`)
         await abnormalOutTransactionModel.deleteOne({ id: doc.id })
+        return
+      }
+      const matchedTx2 = await makerTxModel.findOne({
+        toChain: String(doc.chainId),
+        $or: [
+          {'matchedScanTx.hash': doc.hash},
+          {warnTxList: { $in: [doc.hash] }},
+        ]
+      })
+      if (matchedTx2) {
+        logger.info(`checkAbnormalOutTransaction delete by makerTxModel tx:${doc.hash}, id:${doc.id}`)
+        await abnormalOutTransactionModel.deleteOne({ id: doc.id })
       }
     }, { concurrency: 3 });
     if (docs.length && docs.length === pageSize) {
@@ -347,3 +371,24 @@ export async function checkAbnormalOutTransaction() {
     }
   } while(!done)
 }
+
+export async function checkAbnormalOutTransaction2() {
+  let done = false;
+  let where: { id?: any, hash?:string } = {
+    // hash: "0xebea7da4710f642056f859535cc07b191681f000cc08228c92d94b3158727f1f"
+  };
+  let pageSize = 100;
+  do {
+    const docs = await invalidTransaction.find(where).sort({id: -1}).limit(pageSize).lean();
+    await bluebird.map(docs, async (doc) => {
+      const result = await checkTxValidOnChain(doc.hash, String(doc.chainId))
+      console.log(`id: ${doc.id}, hash: ${doc.hash}, chain:${doc.chainId}, result: ${result}`)
+    }, { concurrency: 1 });
+    if (docs.length && docs.length === pageSize) {
+      where.id = { $lt: docs[docs.length - 1].id }
+    } else {
+      done = true
+    }
+  } while(!done)
+}
+

@@ -22,6 +22,14 @@ export function getScanTxListURL(
   return `${url}?module=account&action=txlist&address=${address}&startblock=0&endblock=${endblock}&page=1&offset=${offset}&sort=desc&apikey=${key}`
 }
 
+export function getScanTxStatusByHashUrl(chain: Chains, hash: string) {
+  const { url, key } = getScanUrlAndAPIKey(chain)
+  if (!url || !key) {
+    return undefined
+  }
+  return `${url}?module=transaction&action=getstatus&txhash=${hash}&apikey=${key}`
+}
+
 export function getTokenTxListURL(
   chain: Chains,
   userAddress: string,
