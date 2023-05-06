@@ -189,10 +189,10 @@ export async function startMatch2() {
 export async function fetchInvalidTransaction() {
   const concurrency = 2
   const maxIdDoc = await invalidTransaction.find({}).sort({ id: -1 }).limit(concurrency);
-  let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-04-13' AND side = 0 AND \`value\` != '0'`
-  if (maxIdDoc && maxIdDoc.length) {
-    sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
-  }
+  let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-03-01' AND side = 0 AND \`value\` != '0'`
+  // if (maxIdDoc && maxIdDoc.length) {
+  //   sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
+  // }
   let result = await pool.query(sql)
   const list = result[0] as InvalidTransactionMysql[]
   logger.info(`fetchInvalidTransaction sql: ${sql} , length:${list.length}`)
@@ -203,6 +203,7 @@ export async function fetchInvalidTransaction() {
     const hash = item.hash;
     if (IsIgnoreAddress(item.from)) {
       logger.info(`fetchInvalidTransaction: maker transfer, makerAddress:${item.from}, id:${item.id}`)
+      return
     }
     let checkR = await checkTxValidOnChain(item.hash, String(item.chainId))
     if (!checkR) {
