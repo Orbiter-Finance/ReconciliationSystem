@@ -254,9 +254,33 @@ export async function fetchAbnormalOutTransaction() {
     if (doc) {
       return
     }
-    const matchedTx = await invalidTransaction.findOne({ 'matchedTx.hash': hash, chainId: Number(item.chainId) })
+    const matchedTx = await invalidTransaction.findOne({
+      $or: [
+        {'matchedTx.hash': hash},
+        {'matchedTx._id': hash.replace(/0x0+/, '0x')},
+        {'matchedTx.blockHash': hash},
+        {warnTxList: { $in: [hash] }},
+        {warnTxList: { $in: [hash.replace(/0x0+/, '0x')] }},
+      ],
+      chainId: Number(item.chainId)
+    })
     if (matchedTx) {
       logger.info(`fetchAbnormalOutTransaction ignore by return tx:${item.hash}, id:${item.id}`)
+      return
+    }
+
+    const matchedTx2 = await makerTxModel.findOne({
+      toChain: String(item.chainId),
+      $or: [
+        {'matchedScanTx.hash': hash},
+        {'matchedScanTx._id': hash.replace(/0x0+/, '0x')},
+        {'matchedScanTx.blockHash': hash},
+        {warnTxList: { $in: [hash] }},
+      ]
+    })
+
+    if (matchedTx2) {
+      logger.info(`fetchAbnormalOutTransaction ignore by makerTxModel tx:${item.hash}, id:${item.id}`)
       return
     }
     insertData.timestamp = new Date(item.timestamp)
@@ -327,7 +351,9 @@ export async function matchInvalidReceiveTransaction() {
 
 export async function checkAbnormalOutTransaction() {
   let done = false;
-  let where: { id?: any } = {};
+  let where: { id?: any, hash?: string } = {
+    // hash: "0x7d6472483be5dd9a896efb1c2a2bea0d4b3ac3f176359a2ebefee3fad5af8d00"
+  };
   let pageSize = 100;
   do {
     const docs = await abnormalOutTransactionModel.find(where).sort({id: -1}).limit(pageSize).lean();
