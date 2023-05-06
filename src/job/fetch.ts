@@ -359,6 +359,8 @@ export async function checkAbnormalOutTransaction() {
         toChain: String(doc.chainId),
         $or: [
           {'matchedScanTx.hash': doc.hash},
+          {'matchedScanTx._id': doc.hash.replace(/0x0+/, '0x')},
+          {'matchedScanTx.blockHash': doc.hash},
           {warnTxList: { $in: [doc.hash] }},
         ]
       })
