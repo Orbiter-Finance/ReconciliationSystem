@@ -190,9 +190,9 @@ export async function fetchInvalidTransaction() {
   const concurrency = 2
   const maxIdDoc = await invalidTransaction.find({}).sort({ id: -1 }).limit(concurrency);
   let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-03-01' AND side = 0 AND \`value\` != '0'`
-  // if (maxIdDoc && maxIdDoc.length) {
-  //   sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
-  // }
+  if (maxIdDoc && maxIdDoc.length) {
+    sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
+  }
   let result = await pool.query(sql)
   const list = result[0] as InvalidTransactionMysql[]
   logger.info(`fetchInvalidTransaction sql: ${sql} , length:${list.length}`)
