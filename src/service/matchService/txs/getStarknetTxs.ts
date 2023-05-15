@@ -1,9 +1,9 @@
 import { BigNumber } from 'ethers'
 import StarknetTxModel from '../../../model/starknetTx'
+import StarknetReceiptModel, { StarknetReceiptType } from '../../../model/starknetReceipt'
 import { StarknetTx } from '../../../constant/tx.types'
 import logger from '../../../utils/logger'
-
-export default async function getStarknetTxs(address: string, startTime?: number, toAmount?: string, makerList?: string[]): Promise<StarknetTx[]> {
+export default async function getStarknetTxs(address: string, startTime?: number, toAmount?: string, makerList?: string[]): Promise<StarknetTx[] | StarknetReceiptType[]> {
   if (!address) {
     return undefined
   }
@@ -23,8 +23,31 @@ export default async function getStarknetTxs(address: string, startTime?: number
   if (makerList && makerList.length) {
     where['sender_address'] = { $in: makerList }
   }
-  const matcheds = await StarknetTxModel.find(where).sort({ timestamp: -1 }).limit(300)
+
+  let matcheds: StarknetTx[] | StarknetReceiptType[]
+  matcheds = await StarknetTxModel.find(where).sort({ timestamp: -1 }).limit(300)
   // logger.info(`getStarknetTxs --- ${matcheds.length}`)
+  if (matcheds.length) {
+    return matcheds;
+  }
+  const starknetReceiptModelWhere = {
+    'events.data.1': `0x${BigInt(address).toString(16)}`,
+  }
+
+  if (makerList) {
+    starknetReceiptModelWhere['events.data.0'] =  { $in: makerList }
+  }
+
+  if (toAmount) {
+    starknetReceiptModelWhere['events.data.2'] = BigNumber.from(toAmount).toHexString()
+  }
+  matcheds = await StarknetReceiptModel.find(starknetReceiptModelWhere).limit(100).lean()
+  matcheds = matcheds.map((item: StarknetReceiptType) => {
+    return {
+      ...item,
+      hash: item.transaction_hash
+    }
+  })
   return matcheds
 }
 

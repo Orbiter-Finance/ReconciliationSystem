@@ -10,6 +10,7 @@ import { BigNumber } from 'ethers'
 import isMaker, { isMaker2, makers } from '../../utils/isMaker'
 import { ArbNovaTx, ScanTokenTx, ScanTx, StarknetTx, ZkSynceraTx, ZkSyncliteTx } from '../../constant/tx.types'
 import { InvalidTransaction} from '../../model/invalidTransaction'
+import { StarknetReceiptType } from '../../model/starknetReceipt'
 export async function getMatchedTxByMakerTx(
   makerTx: MakerTx
 ): Promise<ZkSynceraTx[] | ScanTokenTx[] | ScanTx[] | StarknetTx[] | ZkSyncliteTx[] | ArbNovaTx[] | undefined> {
@@ -23,7 +24,7 @@ export async function getMatchedTxByMakerTx(
     const failTxTime = new Date(inData.timestamp).getTime();
     const txs = await getStarknetTxs(replyAccount, failTxTime, toAmount, makers)
 
-    return txs?.filter((item) => ((item?.input?.[7] === amount || item?.input?.[7] === toAmount) && isMaker(item.sender_address)))
+    return txs
   }
 
   if (isZksynclite(makerTx)) {
@@ -107,7 +108,7 @@ export async function getMatchedTxByMakerTx(
 
 export async function getMatchedTxByInvalidReceiveTransaction(
   tx: InvalidTransaction
-  ): Promise<ZkSynceraTx[] | ScanTokenTx[] | ScanTx[] | StarknetTx[] | ZkSyncliteTx[] | ArbNovaTx[] | undefined> {
+  ): Promise<ZkSynceraTx[] | ScanTokenTx[] | ScanTx[] | StarknetTx[] | StarknetReceiptType[] | ZkSyncliteTx[] | ArbNovaTx[] | undefined> {
   const { from, value, symbol, tokenAddress } = tx
   let chainId = String(tx.chainId)
   if (!from || !isChainId(chainId) || !chainId) {
@@ -118,8 +119,7 @@ export async function getMatchedTxByInvalidReceiveTransaction(
 
     const txTime = new Date(tx.timestamp).getTime()
     const txs = await getStarknetTxs(from, txTime, value, makers)
-
-    return txs?.filter((item) => item?.input?.[7] === value)
+    return txs
   }
 
   if (isZksynclite(chainId)) {
