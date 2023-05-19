@@ -378,7 +378,7 @@ router.get("/statistic", async (ctx) => {
   const pendingPay = {}
   if (result.length) {
     result.map(e => {
-      pendingPay[e._id] = ethers.utils.formatUnits(parseFloat(e.count).toString(), constant.decimalMap[e._id] || 18)
+      pendingPay[e._id] = parseFloat(ethers.utils.formatUnits(e.count.toString(), constant.decimalMap[e._id] || 18)).toFixed(2)
     })
   }
   ctx.body = {
