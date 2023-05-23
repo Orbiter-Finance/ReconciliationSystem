@@ -373,6 +373,7 @@ export async function checkAbnormalOutTransaction() {
           {'matchedTx.hash': doc.hash},
           {'matchedTx._id': doc.hash.replace(/0x0+/, '0x')},
           {'matchedTx.blockHash': doc.hash},
+          {'matchedTx.txHash': doc.hash},
           {warnTxList: { $in: [doc.hash] }},
           {warnTxList: { $in: [doc.hash.replace(/0x0+/, '0x')] }},
         ]
