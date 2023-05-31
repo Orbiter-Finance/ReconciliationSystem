@@ -20,7 +20,7 @@ export async function startFetch() {
   const maxIdDoc = await makerTxModel.find({}).sort({ id: -1 }).limit(concurrency);
   let sql = `SELECT * FROM maker_transaction WHERE ISNULL(outId) AND toAmount != 'null' AND toAmount != 'undefined' AND createdAt <= '${start}' AND createdAt >= '20230316'`
   if (first) {
-    sql = `${sql} AND id > 12056920`
+    sql = `${sql} AND id = 13473237`
     first = false
   } else if (maxIdDoc && maxIdDoc.length) {
     sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`
