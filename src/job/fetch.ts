@@ -12,7 +12,7 @@ import isMaker, { IsIgnoreAddress } from '../utils/isMaker'
 import {checkTxValidOnChain} from '../service/matchService/checkTxValidOnChain'
 const REG = new RegExp(/^(?:\d*90..|.*?90..(?:0{0,10}|$))$/)
 
-let first = true;
+let first = false;
 export async function startFetch() {
   const start = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
   const concurrency = 10;
