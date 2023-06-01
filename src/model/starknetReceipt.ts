@@ -50,6 +50,6 @@ let starknetReceipt = new Schema<StarknetReceiptType>({
     transaction_index : Number
 });
 
-export default db2.startnetReceiptConnection.model("starknet_receipt", starknetReceipt, "starknet_receipt");
+export default db2.startnetReceiptConnection.model("Starknet", starknetReceipt, "Starknet");
 
 const ss = '0x1928d53105d1df7da7166a4054ae0aa240f5bc310002eth0'
