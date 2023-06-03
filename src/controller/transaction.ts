@@ -176,12 +176,14 @@ router.post('/abnormalOutTransaction', async (ctx: Context) => {
         minAmount,
         maxAmount,
         symbol = '',
-        filterAddressList
+        filterAddressList,
+        state,
     } = param
     if (filterAddressList && !Array.isArray(filterAddressList)) {
       ctx.body = { code: 1, msg: 'Parameter error' };
       return
     }
+    state = Number(state)
     size = Number(size)
     current = Number(current);
     symbol = String(symbol);
@@ -189,7 +191,29 @@ router.post('/abnormalOutTransaction', async (ctx: Context) => {
       current = 1;
     }
     const skip = (current - 1) * size;
-    const where: any = {};
+    const where: any = {
+      $and: []
+    };
+    if (state === constant.abnormalOutTransactionState.noConfirm) {
+      where.$and.push({
+        $or: [
+          { confirmStatus: { $exists: false } },
+          { confirmStatus: constant.abnormalOutTransactionConfirmStatus.noConfirm }
+        ]
+      })
+    } else if (state === constant.abnormalOutTransactionState.successByAdmin) {
+      where.$and.push({
+        $or: [
+          { confirmStatus: constant.abnormalOutTransactionConfirmStatus.successByAdmin }
+        ]
+      })
+    } else if (state === constant.abnormalOutTransactionState.failByAdmin) {
+      where.$and.push({
+        $or: [
+          { confirmStatus: constant.abnormalOutTransactionConfirmStatus.failByAdmin }
+        ]
+      })
+    }
     if (filterAddressList && filterAddressList.length > 0) {
       where.$and = [
         { to: { $nin: filterAddressList } }
@@ -261,6 +285,15 @@ router.post('/abnormalOutTransaction', async (ctx: Context) => {
         },
     ])
     const count = r[0]?.count || 0
+    docs.forEach(item => {
+      if (!item.confirmStatus || item.confirmStatus === constant.abnormalOutTransactionConfirmStatus.noConfirm) {
+        item.state = constant.abnormalOutTransactionState.noConfirm
+      } else if (item.confirmStatus === constant.abnormalOutTransactionConfirmStatus.successByAdmin) {
+        item.state = constant.abnormalOutTransactionState.successByAdmin
+      } else if (item.confirmStatus === constant.abnormalOutTransactionConfirmStatus.failByAdmin){
+        item.state = constant.abnormalOutTransactionState.failByAdmin
+      }
+    })
     ctx.body = { data: docs, pages: current, code: 0, size, total: count };
 })
 
@@ -332,6 +365,43 @@ router.get('/userReceiveTxList', async (ctx: Context) => {
       let list = await getScanDataByInvalidReceiveTransaction(invalidTx, time)
       result.data = list
       return
+})
+
+router.post('/abnormalOutTransaction/submit', checkLogin, async (ctx: Context) => {
+  const body: any = ctx.request.body;
+  let { txIds, hash } = body;
+  const status = +body.status as constant.abnormalOutTransactionSubmitStatus
+  const { uid, name, role } = ctx as any;
+  if (!txIds || (Array.isArray(txIds) && txIds.length < 1) || ![0,1,2].includes(status) || (status === 1 && !hash)) {
+      ctx.body = { code: 1, msg: 'Parameter error' };
+      return;
+  }
+  if (!Array.isArray(txIds)) {
+    txIds = [txIds]
+  }
+  txIds = _.uniq(txIds)
+  const txList = await abnormalOutTransactionModel.find({
+        id: { $in: txIds }
+  });
+  if (txList.length !== txIds.length) {
+      ctx.body = { code: 1, msg: 'Someone transactions do not exist' };
+      return;
+  }
+  let confirmStatus;
+  switch(status) {
+      case 0: confirmStatus = constant.abnormalOutTransactionConfirmStatus.noConfirm;break;
+      case 1: confirmStatus = constant.abnormalOutTransactionConfirmStatus.successByAdmin;break;
+      case 2: confirmStatus = constant.abnormalOutTransactionConfirmStatus.failByAdmin;break; // not auto reply
+  }
+  const userLog = { uid, name, hash, updateStatus: status, role, updateTime: new Date() };
+  const updateData:any = { confirmStatus, userLog }
+  await bluebird.map(txIds, async (id) => {
+      logger.info(`submit update, id: ${id}, updateData:${JSON.stringify(updateData)}`)
+      await abnormalOutTransactionModel.updateOne({
+          id: id,
+      }, { $set: updateData })
+  }, { concurrency: 2 });
+  ctx.body = { code: 0, msg: 'success' };
 })
 
 

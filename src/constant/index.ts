@@ -39,6 +39,20 @@ export const invalidTransactionConfirmStatus = {
     ignoreByAdmin: 'ignoreByAdmin',
 }
 
+export const abnormalOutTransactionState = {
+    all: 0,
+    noConfirm: 1,
+    successByAdmin: 2,
+    failByAdmin: 3,
+}
+
+export const abnormalOutTransactionConfirmStatus = {
+    noConfirm: 'noConfirm',
+    successByAdmin: 'successByAdmin',
+    failByAdmin: 'failByAdmin',
+}
+ 
+
 export enum invalidTransactionSubmitStatus {
     noConfirm = 0,
     successByAdmin = 1,
@@ -46,6 +60,13 @@ export enum invalidTransactionSubmitStatus {
     ignoreByAdmin = 3,
     replyByAdmin = 4,
 }
+
+export enum abnormalOutTransactionSubmitStatus {
+    noConfirm = 0,
+    successByAdmin = 1,
+    failByAdmin = 2,
+}
+
 export const chainDesc = ['arbitrum', 'ethereum', 'optimism', 'starknet', 'zksyncera', 'zksynclite','polygon','metis','boba','bsc']
 
 export const decimalMap = {

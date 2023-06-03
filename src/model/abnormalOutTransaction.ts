@@ -27,6 +27,8 @@ export type AbnormalOutTransaction = {
     transferId: string,
     lpId: string,
     extra: Object,
+    userLog: Object,
+    confirmStatus: string,
     // "extra": {
     //   "ua": {
     //     "toTokenAddress": "0x0000000000000000000000000000000000000000"
@@ -78,7 +80,8 @@ let AbnormalOutTransaction = new Schema<AbnormalOutTransaction>({
     //   "server": "E4E",
     //   "toSymbol": "ETH"
     // },
-
+    userLog: Object,
+    confirmStatus: { type: String, index: true, default: 'noConfirm' }, // noConfirm, successByAdmin,failByAdmin
     replyAccount: String,
     replySender: String,
     createdAt: Date,

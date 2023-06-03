@@ -23,6 +23,8 @@ export async function checkTxValidOnChain(hash: string, chainId: string): Promis
         let tx = await getZksyncliteTxByHash(hash)
         if (tx && tx.fail_reason) {
             return false
+        } else if(!tx) {
+            return false
         } else {
             return true
         }
