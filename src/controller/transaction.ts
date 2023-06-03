@@ -452,11 +452,58 @@ router.post('/abnormalOutTransaction/statistic', async (ctx: Context) => {
     successByAdminCountResult: abnormalOutTransactionModel.count(successByAdminWhere),
     failByAdminCountResult: abnormalOutTransactionModel.count(failByAdminWhere),
   })
+  const result = await bluebird.map([noConfirmWhere, successByAdminWhere, failByAdminWhere], async where => {
+    let r =await abnormalOutTransactionModel.aggregate([
+      {
+        $match: where
+      },
+      {
+        $addFields: { "numberToAmount": { $convert: { input: "$value", "to":"decimal", "onError": 0 } } }
+      },
+      {
+          $group: { _id : "$extra.toSymbol", "count2":{"$sum": "$numberToAmount"} }
+      },
+      {
+          $addFields: { "count": { $convert: { input: "$count2", "to":"string", "onError": 0 } } }
+      }
+    ])
+    return r 
+  })
+  let noConfirmAmount = {}
+  let successByAdminAmount = {}
+  let failByAdminAmount = {}
+  if (result[0] && result[0].length) {
+    for (const item of result[0]) {
+      if (!item._id) {
+        continue
+      }
+      noConfirmAmount[item._id] = parseFloat(ethers.utils.formatUnits(item.count.toString(), constant.decimalMap[item._id] || 18)).toFixed(2)
+    }
+  }
+  if (result[1] && result[1].length) {
+    for (const item of result[1]) {
+      if (!item._id) {
+        continue
+      }
+      successByAdminAmount[item._id] = parseFloat(ethers.utils.formatUnits(item.count.toString(), constant.decimalMap[item._id] || 18)).toFixed(2)
+    }
+  }
+  if (result[2] && result[2].length) {
+    for (const item of result[2]) {
+      if (!item._id) {
+        continue
+      }
+      failByAdminAmount[item._id] = parseFloat(ethers.utils.formatUnits(item.count.toString(), constant.decimalMap[item._id] || 18)).toFixed(2)
+    }
+  }
   ctx.body = {
     data: {
       noConfirmCount: noConfirmCountResult,
       successByAdminCount: successByAdminCountResult,
       failByAdminCount: failByAdminCountResult,
+      noConfirmAmount,
+      successByAdminAmount,
+      failByAdminAmount
     },
     code: 0
   }
