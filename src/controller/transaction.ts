@@ -10,7 +10,6 @@ import logger from '../utils/logger'
 import checkLogin from '../middleware/checkLogin'
 import _ from 'lodash'
 import { getScanDataByInvalidReceiveTransaction } from '../service/matchService/getScanDataByMakerTx';
-
 const router = new Router({prefix: '/transaction'});
 
 router.post('/invalidTransaction', async (ctx: Context) => {
@@ -215,9 +214,7 @@ router.post('/abnormalOutTransaction', async (ctx: Context) => {
       })
     }
     if (filterAddressList && filterAddressList.length > 0) {
-      where.$and = [
-        { to: { $nin: filterAddressList } }
-      ]
+      where.$and.push({ to: { $nin: filterAddressList } })
     }
     if (start && end) {
         where['timestamp'] = {
@@ -369,10 +366,10 @@ router.get('/userReceiveTxList', async (ctx: Context) => {
 
 router.post('/abnormalOutTransaction/submit', checkLogin, async (ctx: Context) => {
   const body: any = ctx.request.body;
-  let { txIds, hash } = body;
+  let { txIds, hash, chainId } = body;
   const status = +body.status as constant.abnormalOutTransactionSubmitStatus
   const { uid, name, role } = ctx as any;
-  if (!txIds || (Array.isArray(txIds) && txIds.length < 1) || ![0,1,2].includes(status) || (status === 1 && !hash)) {
+  if (!txIds || (Array.isArray(txIds) && txIds.length < 1) || ![0,1,2].includes(status) || (status === 1 && (!hash || !chainId))) {
       ctx.body = { code: 1, msg: 'Parameter error' };
       return;
   }
@@ -393,7 +390,7 @@ router.post('/abnormalOutTransaction/submit', checkLogin, async (ctx: Context) =
       case 1: confirmStatus = constant.abnormalOutTransactionConfirmStatus.successByAdmin;break;
       case 2: confirmStatus = constant.abnormalOutTransactionConfirmStatus.failByAdmin;break; // not auto reply
   }
-  const userLog = { uid, name, hash, updateStatus: status, role, updateTime: new Date() };
+  const userLog = { uid, name, hash, chainId, updateStatus: status, role, updateTime: new Date() };
   const updateData:any = { confirmStatus, userLog }
   await bluebird.map(txIds, async (id) => {
       logger.info(`submit update, id: ${id}, updateData:${JSON.stringify(updateData)}`)
@@ -404,5 +401,58 @@ router.post('/abnormalOutTransaction/submit', checkLogin, async (ctx: Context) =
   ctx.body = { code: 0, msg: 'success' };
 })
 
+router.post('/abnormalOutTransaction/statistic', async (ctx: Context) => {
+  const param = ctx.request.body as any;
+  let {
+      startTime: start,
+      endTime: end,
+      chainId,
+      filterAddressList,
+  } = param
+  if (filterAddressList && !Array.isArray(filterAddressList)) {
+    ctx.body = { code: 1, msg: 'Parameter error' };
+    return
+  }
+  const where: any = {
+    $and: []
+  }
+  if (filterAddressList && filterAddressList.length > 0) {
+    where.$and.push({ to: { $nin: filterAddressList } })
+  }
+  if (chainId) {
+    where.chainId = { $eq: Number(chainId) }
+  }
+  const noConfirmWhere = _.cloneDeep(where)
+  const successByAdminWhere = _.cloneDeep(where)
+  const failByAdminWhere = _.cloneDeep(where)
+  noConfirmWhere.$and.push({
+    $or: [
+      { confirmStatus: { $exists: false } },
+      { confirmStatus: constant.abnormalOutTransactionConfirmStatus.noConfirm }
+    ]
+  })
+  successByAdminWhere.$and.push({
+    $or: [
+      { confirmStatus: constant.abnormalOutTransactionConfirmStatus.successByAdmin }
+    ]
+  })
+  failByAdminWhere.$and.push({
+    $or: [
+      { confirmStatus: constant.abnormalOutTransactionConfirmStatus.failByAdmin }
+    ]
+  })
+  const { noConfirmCountResult, successByAdminCountResult, failByAdminCountResult } = await bluebird.props({
+    noConfirmCountResult: abnormalOutTransactionModel.count(noConfirmWhere),
+    successByAdminCountResult: abnormalOutTransactionModel.count(successByAdminWhere),
+    failByAdminCountResult: abnormalOutTransactionModel.count(failByAdminWhere),
+  })
+  ctx.body = {
+    data: {
+      noConfirmCount: noConfirmCountResult,
+      successByAdminCount: successByAdminCountResult,
+      failByAdminCount: failByAdminCountResult,
+    }
+  }
+})
 
 export default router;
