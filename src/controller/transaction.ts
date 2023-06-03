@@ -419,6 +419,12 @@ router.post('/abnormalOutTransaction/statistic', async (ctx: Context) => {
   if (filterAddressList && filterAddressList.length > 0) {
     where.$and.push({ to: { $nin: filterAddressList } })
   }
+  if (start && end) {
+    where['timestamp'] = {
+      $gt: new Date(Number(start)),
+      $lte: new Date(Number(end)),
+    };
+}
   if (chainId) {
     where.chainId = { $eq: Number(chainId) }
   }
