@@ -467,7 +467,7 @@ router.post('/abnormalOutTransaction/statistic', async (ctx: Context) => {
         $addFields: { "numberToAmount": { $convert: { input: "$value", "to":"decimal", "onError": 0 } } }
       },
       {
-          $group: { _id : "$extra.toSymbol", "count2":{"$sum": "$numberToAmount"} }
+          $group: { _id : "$symbol", "count2":{"$sum": "$numberToAmount"} }
       },
       {
           $addFields: { "count": { $convert: { input: "$count2", "to":"string", "onError": 0 } } }
