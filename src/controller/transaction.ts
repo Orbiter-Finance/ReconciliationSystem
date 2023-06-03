@@ -431,6 +431,7 @@ router.post('/abnormalOutTransaction/statistic', async (ctx: Context) => {
   if (chainId) {
     where.chainId = { $eq: Number(chainId) }
   }
+  logger.info(JSON.stringify(where))
   const noConfirmWhere = _.cloneDeep(where)
   const successByAdminWhere = _.cloneDeep(where)
   const failByAdminWhere = _.cloneDeep(where)

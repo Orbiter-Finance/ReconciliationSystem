@@ -74,6 +74,8 @@ export const decimalMap = {
     "USDT": 6,
     "USDC": 6,
     "DAI": 18,
+    "BNB": 18,
+    "MATIC": 18
 }
 
 export const failMakerTransactionStatus = {
