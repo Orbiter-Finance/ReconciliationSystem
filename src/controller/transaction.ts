@@ -457,7 +457,8 @@ router.post('/abnormalOutTransaction/statistic', async (ctx: Context) => {
       noConfirmCount: noConfirmCountResult,
       successByAdminCount: successByAdminCountResult,
       failByAdminCount: failByAdminCountResult,
-    }
+    },
+    code: 0
   }
 })
 
