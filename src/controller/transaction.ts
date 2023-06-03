@@ -254,6 +254,9 @@ router.post('/abnormalOutTransaction', async (ctx: Context) => {
         }
       }
     }
+    if (where.$and && where.$and.length < 1) {
+      delete where.$and
+    } 
     logger.info(JSON.stringify(where));
     const aggregate = [
         {
@@ -453,6 +456,9 @@ router.post('/abnormalOutTransaction/statistic', async (ctx: Context) => {
     failByAdminCountResult: abnormalOutTransactionModel.count(failByAdminWhere),
   })
   const result = await bluebird.map([noConfirmWhere, successByAdminWhere, failByAdminWhere], async where => {
+    if (where.$and && where.$and.length < 1) {
+      delete where.$and
+    } 
     let r =await abnormalOutTransactionModel.aggregate([
       {
         $match: where
