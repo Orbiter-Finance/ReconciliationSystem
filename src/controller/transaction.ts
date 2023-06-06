@@ -125,7 +125,7 @@ router.post('/invalidTransaction', async (ctx: Context) => {
     const docs = await invalidTransactionModel.aggregate([
         ...aggregate,
         {
-          $sort: { createdAt: -1 }
+          $sort: { timestamp: -1 }
         },
         {
           $skip: skip,
@@ -269,7 +269,7 @@ router.post('/abnormalOutTransaction', async (ctx: Context) => {
     const docs = await abnormalOutTransactionModel.aggregate([
         ...aggregate,
         {
-          $sort: { createdAt: -1 }
+          $sort: { timestamp: -1 }
         },
         {
           $skip: skip,
