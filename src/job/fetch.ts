@@ -229,7 +229,7 @@ export async function fetchInvalidTransaction() {
 export async function fetchAbnormalOutTransaction() {
   const concurrency = 2
   const end = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
-  let sql = `SELECT * FROM transaction WHERE \`status\` !=99 AND \`timestamp\` > '2023-03-15' AND \`timestamp\` < '${end}' AND side = 1`;
+  let sql = `SELECT * FROM transaction WHERE \`status\` != 99 AND \`status\` != 2 AND \`timestamp\` > '2023-03-15' AND \`timestamp\` < '${end}' AND side = 1`;
   const maxIdDoc = await abnormalOutTransactionModel.find({}).sort({ id: -1 }).limit(concurrency);
   if (maxIdDoc && maxIdDoc.length) {
     sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
@@ -370,6 +370,7 @@ export async function checkAbnormalOutTransaction() {
       const matchedTx = await invalidTransaction.findOne({
         chainId: Number(doc.chainId),
         $or: [
+          {'userLog.hash': doc.hash},
           {'matchedTx.hash': doc.hash},
           {'matchedTx._id': doc.hash.replace(/0x0+/, '0x')},
           {'matchedTx.blockHash': doc.hash},
