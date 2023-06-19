@@ -286,9 +286,18 @@ export async function fetchAbnormalOutTransaction() {
       logger.info(`fetchAbnormalOutTransaction ignore by makerTxModel tx:${item.hash}, id:${item.id}`)
       return
     }
-    insertData.timestamp = new Date(item.timestamp)
-    insertData.createdAt = new Date(item.createdAt)
-    insertData.updatedAt = new Date(item.updatedAt)
+    if (item.timestamp) {
+      insertData.timestamp = new Date(item.timestamp)
+    }
+    if (item.createdAt) {
+      insertData.createdAt = new Date(item.createdAt)
+    }
+    if (item.updatedAt) {
+      insertData.updatedAt = new Date(item.updatedAt)
+    }
+    // insertData.timestamp = new Date(item.timestamp)
+    // insertData.createdAt = new Date(item.createdAt)
+    // insertData.updatedAt = new Date(item.updatedAt)
     await abnormalOutTransactionModel.create(insertData)
   }, {concurrency: concurrency})
 }
