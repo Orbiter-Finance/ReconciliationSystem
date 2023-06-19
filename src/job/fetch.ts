@@ -257,9 +257,11 @@ export async function fetchAbnormalOutTransaction() {
     }
     const matchedTx = await invalidTransaction.findOne({
       $or: [
+        {'userLog.hash': hash},
         {'matchedTx.hash': hash},
         {'matchedTx._id': hash.replace(/0x0+/, '0x')},
         {'matchedTx.blockHash': hash},
+        {'matchedTx.txHash': hash},
         {warnTxList: { $in: [hash] }},
         {warnTxList: { $in: [hash.replace(/0x0+/, '0x')] }},
       ],

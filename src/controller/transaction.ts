@@ -61,7 +61,14 @@ router.post('/invalidTransaction', async (ctx: Context) => {
           where.$or = [
             { from:  { $eq: key } },
             { to:  { $eq: key } },
-            { hash:  { $eq: key } }
+            { hash:  { $eq: key } },
+            {'userLog.hash': key},
+            {'matchedTx.hash': key},
+            {'matchedTx._id': key.replace(/0x0+/, '0x')},
+            {'matchedTx.blockHash': key},
+            {'matchedTx.txHash': key},
+            {warnTxList: { $in: [key] }},
+            {warnTxList: { $in: [key.replace(/0x0+/, '0x')] }},
           ]
         }
     }
