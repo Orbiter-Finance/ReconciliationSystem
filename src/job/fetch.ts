@@ -308,7 +308,7 @@ export async function matchInvalidReceiveTransaction() {
     matchStatus: 'init',
   }
   let done = false;
-  const limit = 5;
+  const limit = 1000;
   const count = await invalidTransaction.count(where)
   logger.info('checkInvalidReceiveTransaction length:', count);
   if (!count) {
@@ -318,6 +318,13 @@ export async function matchInvalidReceiveTransaction() {
   do {
     const invalidTxs = await invalidTransaction.find(where).sort({id: -1}).limit(limit);
     await bluebird.map(invalidTxs, async (invalidTx , index) => {
+      const sql = `SELECT * FROM transaction WHERE id = ${invalidTx.id} AND status = 99`
+      let [r]: any = await pool.query(sql)
+      if (r.length) {
+        logger.info(`匹配无效转入=> 此转入已在dashboard 匹配成功，删除此无效转入 hash: ${invalidTx.hash}, id: ${invalidTx.id}`);
+        await invalidTransaction.findOneAndDelete({ hash: invalidTx.hash, id: invalidTx.id })
+        return
+      }
       let res = await getMatchedTxByInvalidReceiveTransaction(invalidTx)
       if (res && res.length === 1) {
         const [data]: any = res;
