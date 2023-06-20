@@ -389,6 +389,7 @@ export async function checkAbnormalOutTransaction() {
         chainId: Number(doc.chainId),
         $or: [
           {'userLog.hash': doc.hash},
+          {'userLog.hash': `sync-tx:${doc.hash}`},
           {'matchedTx.hash': doc.hash},
           {'matchedTx._id': doc.hash.replace(/0x0+/, '0x')},
           {'matchedTx.blockHash': doc.hash},
@@ -448,3 +449,36 @@ export async function checkAbnormalOutTransaction2() {
   } while(!done)
 }
 
+
+// export async function matchInvalidReceiveTransaction2() {
+//   const where: any = {
+//     matchStatus: { $ne: 'init'},
+//   }
+//   let done = false;
+//   const limit = 100;
+//   const count = await invalidTransaction.count(where)
+//   logger.info('checkInvalidReceiveTransaction length:', count);
+//   if (!count) {
+//     return
+//   }
+//   let findNum = 0;
+//   do {
+//     const invalidTxs = await invalidTransaction.find(where).sort({id: -1}).limit(limit);
+//     await bluebird.map(invalidTxs, async (invalidTx , index) => {
+//       const sql = `SELECT * FROM maker_transaction mt LEFT JOIN transaction t ON mt.outId = t.id WHERE mt.inId = ${invalidTx.id} AND mt.outId IS NOT NULL`
+//       let [r]: any = await pool.query(sql)
+//       if (r.length) {
+//         logger.info(`匹配无效转入=> 此转入已在dashboard 匹配成功，删除此无效转入 hash: ${invalidTx.hash}, id: ${invalidTx.id}`);
+//         console.log(sql)
+//         // await invalidTransaction.findOneAndDelete({ hash: invalidTx.hash, id: invalidTx.id })
+//         return
+//       }
+
+//     }, { concurrency: 20 })
+//     if (invalidTxs.length >= limit) {
+//       where.id = { $lt: invalidTxs[invalidTxs.length - 1].id }
+//     } else {
+//       done = true
+//     }
+//   } while(!done)
+// }
