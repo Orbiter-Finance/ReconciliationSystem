@@ -63,7 +63,7 @@ router.post('/invalidTransaction', async (ctx: Context) => {
             { to:  { $eq: key } },
             { hash:  { $eq: key } },
             {'userLog.hash': key},
-            {'userLog.hash': `sync-tx:${key}`},
+            {'userLog.hash': `sync-tx:0x${key}`},
             {'matchedTx.hash': key},
             {'matchedTx._id': key.replace(/0x0+/, '0x')},
             {'matchedTx.blockHash': key},

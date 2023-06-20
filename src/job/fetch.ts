@@ -389,7 +389,7 @@ export async function checkAbnormalOutTransaction() {
         chainId: Number(doc.chainId),
         $or: [
           {'userLog.hash': doc.hash},
-          {'userLog.hash': `sync-tx:${doc.hash}`},
+          {'userLog.hash': `sync-tx:0x${doc.hash}`},
           {'matchedTx.hash': doc.hash},
           {'matchedTx._id': doc.hash.replace(/0x0+/, '0x')},
           {'matchedTx.blockHash': doc.hash},
