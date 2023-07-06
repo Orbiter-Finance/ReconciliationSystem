@@ -13,7 +13,7 @@ import {checkTxValidOnChain} from '../service/matchService/checkTxValidOnChain'
 const REG = new RegExp(/^(?:\d*90..|.*?90..(?:0{0,10}|$))$/)
 
 let first = false;
-let firstInvalidTransaction = true;
+let firstInvalidTransaction = false;
 export async function startFetch() {
   const start = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
   const concurrency = 10;
@@ -198,6 +198,7 @@ export async function fetchInvalidTransaction() {
       '0xa4b1805f7dfd651672a5000cad44e537a97659eed4b178effd9847df8d20d739',
       '0xaa335d77edb866f1f6f90fbb5db9ebb0e86c14a01b1a0c10d79330d502de100b',
       '0xcd2287023aba3aa1edf8034dbe0a4d091e9cd083158eba770e5f7af39f108370',
+      '0xf92b1bad143f8ebdfe2638e6584da3002e51658a41ae5c627a8f3bf6508b5bf0',
     ]
     sql = `SELECT * FROM \`transaction\` WHERE \`status\` != 99 AND \`timestamp\` > '2023-03-01' AND side = 0 AND \`value\` != '0' AND \`hash\` IN ('${hashList.join("','")}')`
   } else if (maxIdDoc && maxIdDoc.length) {
@@ -229,8 +230,9 @@ export async function fetchInvalidTransaction() {
       return
     }
     insertData.timestamp = new Date(item.timestamp)
-    insertData.createdAt = new Date(item.createdAt)
-    insertData.updatedAt = new Date(item.updatedAt)
+    insertData.createdAt = new Date(item.createdAt).toDateString() !== 'Invalid Date' ? new Date(item.createdAt) : new Date()
+    insertData.updatedAt = new Date(item.updatedAt).toDateString() !== 'Invalid Date' ? new Date(item.updatedAt) : new Date()
+    
     await invalidTransaction.create(insertData)
   }, {concurrency: concurrency})
 }
