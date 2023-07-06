@@ -12,7 +12,8 @@ import isMaker, { IsIgnoreAddress } from '../utils/isMaker'
 import {checkTxValidOnChain} from '../service/matchService/checkTxValidOnChain'
 const REG = new RegExp(/^(?:\d*90..|.*?90..(?:0{0,10}|$))$/)
 
-let first = true;
+let first = false;
+let firstInvalidTransaction = true;
 export async function startFetch() {
   const start = moment().add(-10, 'minutes').format('YYYY-MM-DD HH:mm:ss');
   const concurrency = 10;
@@ -190,7 +191,16 @@ export async function fetchInvalidTransaction() {
   const concurrency = 2
   const maxIdDoc = await invalidTransaction.find({}).sort({ id: -1 }).limit(concurrency);
   let sql = `SELECT * FROM transaction WHERE \`status\` = 3 AND \`timestamp\` > '2023-03-01' AND side = 0 AND \`value\` != '0'`
-  if (maxIdDoc && maxIdDoc.length) {
+  if (firstInvalidTransaction) {
+    firstInvalidTransaction = false
+    const hashList = [
+      '0x5c3c63930d19126c3ccb0ecd5fecf93fce7ae02915bad11108fb2f6e30fe45e6',
+      '0xa4b1805f7dfd651672a5000cad44e537a97659eed4b178effd9847df8d20d739',
+      '0xaa335d77edb866f1f6f90fbb5db9ebb0e86c14a01b1a0c10d79330d502de100b',
+      '0xcd2287023aba3aa1edf8034dbe0a4d091e9cd083158eba770e5f7af39f108370',
+    ]
+    sql = `SELECT * FROM \`transaction\` WHERE \`status\` != 99 AND \`timestamp\` > '2023-03-01' AND side = 0 AND \`value\` != '0' AND \`hash\` IN ('${hashList.join("','")}')`
+  } else if (maxIdDoc && maxIdDoc.length) {
     sql = `${sql} AND id > ${maxIdDoc[maxIdDoc.length - 1].id}`;
   }
   let result = await pool.query(sql)
